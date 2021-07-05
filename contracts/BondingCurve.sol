@@ -11,7 +11,7 @@ pragma solidity ^0.8.4;
  */
 
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol" as SafeMath;
 
 contract BondingCurve is ChainlinkClient {
     using Chainlink for ChainlinkRequest;
@@ -32,5 +32,11 @@ contract BondingCurve is ChainlinkClient {
         uint256 storage reserveRatio,
         uint256 storage m,
         uint256 _tokens
+    ) public returns (uint256) {}
+
+    function getInitialTokens(
+        uint256 storage reserveRatio,
+        uint256 storage m,
+        uint256 _price
     ) public returns (uint256) {}
 }
