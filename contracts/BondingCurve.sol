@@ -28,15 +28,17 @@ contract BondingCurve is ChainlinkClient {
         setPublicChainlinkToken();
     }
 
-    function getInitialPrice(
-        uint256 storage reserveRatio,
-        uint256 storage m,
-        uint256 _tokens
+    function calculatePurchaseReturnInitial() public returns (uint256) {}
+
+    function calculatePurchaseReturn(
+        uint256 _poolBalance,
+        uint256 supply,
+        uint256 _price
     ) public returns (uint256) {}
 
-    function getInitialTokens(
-        uint256 storage reserveRatio,
-        uint256 storage m,
-        uint256 _price
+    function calculateSellPrice(
+        uint256 _poolBalance,
+        uint256 supply,
+        uint256 _tokens
     ) public returns (uint256) {}
 }
