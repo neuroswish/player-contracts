@@ -15,17 +15,6 @@ import "@openzeppelin/contracts/access/Ownable.sol" as Ownable;
  */
 
 contract Market is MarketStorage, BondingCurve, Ownable {
-    // string marketName;
-    // string marketSymbol;
-    // uint256 poolBalance;
-    // uint256 supply;
-    // mapping(address => uint256) tokenBalance;
-
-    // constructor(string memory _marketName, string memory _marketSymbol) {
-    //     marketName = _marketName;
-    //     marketSymbol = _marketSymbol;
-    // }
-
     /**
      * @notice Implement a ceiling on valid gas prices to mitigate front-running
      */
