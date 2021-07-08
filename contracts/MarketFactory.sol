@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import {MarketProxy} from "./MarketProxy.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
 /**
  * @title Market Factory
@@ -21,12 +20,14 @@ contract MarketFactory {
     }
 
     // ======== Immutable storage ========
+    // address for the logic contract
     address public immutable logic;
 
     // ======== Mutable storage ========
     Parameters public parameters;
 
     // ======== Constructor ========
+    // the constructor deploys an initial version that will act as a template
     constructor(address _logic) {
         logic = _logic;
     }
@@ -43,5 +44,6 @@ contract MarketFactory {
         );
 
         delete parameters;
+        return marketProxy;
     }
 }

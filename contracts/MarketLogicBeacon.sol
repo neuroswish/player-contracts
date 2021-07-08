@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "./MarketStorage.sol";
 import "./BondingCurve.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
@@ -16,7 +13,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * "It won't feel right 'till I feel like Phil Knight"
  */
 
-contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
+contract MarketLogic is BondingCurve, ReentrancyGuard {
     // ======== constants ========
     // TODO fix this to reflect etherscan oracle
     uint256 internal maxGas = 20 gwei;
@@ -30,9 +27,6 @@ contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
     uint256 public supply;
     mapping(address => uint256) public tokenBalance;
 
-    // ======== delegation logic ========
-    address public logic;
-
     /**
      * @notice Implement a ceiling on valid gas prices to mitigate front-running
      */
@@ -41,10 +35,7 @@ contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
         _;
     }
 
-    function initialize(string memory _name, string memory _symbol)
-        public
-        initializer
-    {
+    constructor(string memory _name, string memory _symbol) {
         name = _name;
         symbol = _symbol;
     }

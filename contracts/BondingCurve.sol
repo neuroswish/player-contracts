@@ -10,21 +10,24 @@ pragma solidity ^0.8.4;
  * "All of you Mario, it's all a game"
  */
 
-import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol" as SafeMath;
+import "@chainlink/contracts/src/v0.8/dev/ChainlinkClient.sol";
 
 contract BondingCurve is ChainlinkClient {
-    using Chainlink for ChainlinkRequest;
-    using SafeMath for uint256;
+    using Chainlink for Chainlink.Request;
 
     address private oracle;
     bytes32 private jobId;
     uint256 private fee;
 
-    uint256 reserveRatio = 1.div(3);
-    uint256 m = 1.div(1000000);
+    uint256 reserveRatioNumerator = 1;
+    uint256 reserveRatioDenominator = 3;
+    uint256 reserveRatio = reserveRatioNumerator / reserveRatioDenominator;
 
-    constructor() public {
+    uint256 slopeNumerator = 1;
+    uint256 slopeDenominator = 1000000;
+    uint256 m = slopeNumerator / slopeDenominator;
+
+    constructor() {
         setPublicChainlinkToken();
     }
 
