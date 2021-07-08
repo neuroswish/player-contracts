@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "./BondingCurve.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @title Market
@@ -13,7 +14,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * "It won't feel right 'till I feel like Phil Knight"
  */
 
-contract MarketLogic is BondingCurve, ReentrancyGuard {
+contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
     // ======== constants ========
     // TODO fix this to reflect etherscan oracle
     uint256 internal maxGasPrice = 20 gwei;
@@ -35,7 +36,10 @@ contract MarketLogic is BondingCurve, ReentrancyGuard {
         _;
     }
 
-    constructor(string memory _name, string memory _symbol) {
+    function initialize(string memory _name, string memory _symbol)
+        public
+        initializer
+    {
         name = _name;
         symbol = _symbol;
     }

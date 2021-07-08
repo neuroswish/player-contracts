@@ -26,25 +26,30 @@ contract MarketFactory {
     address immutable logic;
 
     // ======== Mutable storage ========
-    Parameters public parameters;
+    // Parameters public parameters;
 
     // ======== Constructor ========
     // the constructor deploys an initial version that will act as a template
-    constructor(address _logic) {
-        logic = _logic;
+    constructor() {
+        logic = address(new MarketLogic());
     }
+
+    bytes4 private constant initialize =
+        bytes4(
+            keccak256("initialize(string memory _name, string memory _symbol)")
+        );
 
     // ======== Deploy contract ========
     function createMarket(string calldata _name, string calldata _symbol)
         external
         returns (address)
     {
-        parameters = Parameters({name: _name, symbol: _symbol});
+        // parameters = Parameters({name: _name, symbol: _symbol});
         BeaconProxy proxy = new BeaconProxy(
             address(UpgradeableBeacon(logic)),
-            abi.encode(_name, _symbol)
+            abi.encodeWithSelector(initialize, _name, _symbol)
         );
-        delete parameters;
+        // delete parameters;
         return address(proxy);
     }
 }
