@@ -12,6 +12,7 @@
   "dependencies": {
     "@chainlink/contracts": "*",
     "@chainlink/external-adapter": "^0.2.6",
-    "@openzeppelin/contracts": "^4.1.0"
+    "@openzeppelin/contracts": "^4.2.0",
+    "@openzeppelin/contracts-upgradeable": "^4.2.0"
   }
 }

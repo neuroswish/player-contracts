@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {MarketProxy} from "./MarketProxy.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
 /**
  * @title Market Factory

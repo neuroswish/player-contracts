@@ -3,6 +3,9 @@ pragma solidity ^0.8.4;
 
 import "./MarketStorage.sol";
 import "./BondingCurve.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Market
@@ -13,7 +16,23 @@ import "./BondingCurve.sol";
  * "It won't feel right 'till I feel like Phil Knight"
  */
 
-contract Market is MarketStorage, BondingCurve {
+contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
+    // ======== constants ========
+    // TODO fix this to reflect etherscan oracle
+    uint256 internal maxGas = 20 gwei;
+
+    // ======== immutable storage ========
+    string public name;
+    string public symbol;
+
+    // ======== mutable storage ========
+    uint256 public poolBalance;
+    uint256 public supply;
+    mapping(address => uint256) public tokenBalance;
+
+    // ======== delegation logic ========
+    address public logic;
+
     /**
      * @notice Implement a ceiling on valid gas prices to mitigate front-running
      */
@@ -21,14 +40,13 @@ contract Market is MarketStorage, BondingCurve {
         require(tx.gasprice <= maxGasPrice);
         _;
     }
-    /**
-     * @notice Prevent re-entrant function calls
-     */
-    modifier noReentrancy() {
-        require(!locked, "Reentrant call");
-        locked = true;
-        _;
-        locked = false;
+
+    function initialize(string memory _name, string memory _symbol)
+        public
+        initializer
+    {
+        name = _name;
+        symbol = _symbol;
     }
 
     function mintStartingSupply() external payable returns (uint256) {
@@ -57,7 +75,7 @@ contract Market is MarketStorage, BondingCurve {
         external
         payable
         gasThrottle
-        noReentrancy
+        nonReentrant
         returns (bool)
     {
         require(
