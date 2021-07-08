@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {MarketLogicBeacon} from "./MarketLogicBeacon.sol";
+import "./MarketLogicBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
@@ -41,8 +41,8 @@ contract MarketFactory {
     {
         parameters = Parameters({name: _name, symbol: _symbol});
         BeaconProxy proxy = new BeaconProxy(
-            UpgradeableBeacon(logic),
-            parameters
+            address(UpgradeableBeacon(logic)),
+            abi.encode(_name, _symbol)
         );
         delete parameters;
         return address(proxy);

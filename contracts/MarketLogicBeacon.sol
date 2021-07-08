@@ -16,13 +16,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract MarketLogic is BondingCurve, ReentrancyGuard {
     // ======== constants ========
     // TODO fix this to reflect etherscan oracle
-    uint256 internal maxGas = 20 gwei;
+    uint256 internal maxGasPrice = 20 gwei;
 
     // ======== immutable storage ========
     string public name;
     string public symbol;
 
-    // ======== mutable storage ========
+    // ======== mutable attributes ========
     uint256 public poolBalance;
     uint256 public supply;
     mapping(address => uint256) public tokenBalance;
@@ -40,12 +40,12 @@ contract MarketLogic is BondingCurve, ReentrancyGuard {
         symbol = _symbol;
     }
 
-    function mintStartingSupply() external payable returns (uint256) {
+    function mintStartingSupply() external payable returns (bool) {
         require(msg.value >= 0);
         uint256 tokensToMint = calculatePurchaseReturnInitial(msg.value);
-        supply = supply.add(tokensToMint);
-        poolBalance = poolBalance.add(msg.value);
-        tokenBalance[msg.sender] = tokenBalance[msg.sender].add(tokensToMint);
+        supply += tokensToMint;
+        poolBalance += msg.value;
+        tokenBalance[msg.sender] += tokensToMint;
         return true;
     }
 
@@ -56,9 +56,9 @@ contract MarketLogic is BondingCurve, ReentrancyGuard {
             supply,
             msg.value
         );
-        supply = supply.add(tokensToMint);
-        tokenBalance[msg.sender] = tokenBalance[msg.sender].add(tokensToMint);
-        poolBalance = poolBalance.add(msg.value);
+        supply += tokensToMint;
+        tokenBalance[msg.sender] += tokensToMint;
+        poolBalance += msg.value;
         return true;
     }
 
@@ -79,9 +79,9 @@ contract MarketLogic is BondingCurve, ReentrancyGuard {
             "Insufficient ETH to redeem"
         );
         sendValue(payable(msg.sender), ethAmount);
-        poolBalance = poolBalance.sub(ethAmount);
-        supply = supply.sub(_tokens);
-        tokenBalance[msg.sender] = tokenBalance[msg.sender].sub(_tokens);
+        poolBalance -= ethAmount;
+        supply -= _tokens;
+        tokenBalance[msg.sender] -= _tokens;
         return true;
     }
 
