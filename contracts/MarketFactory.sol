@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import {MarketProxy} from "./MarketProxy.sol";
+import "./MarketLogic.sol";
+import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /**
  * @title Market Factory
@@ -13,23 +15,12 @@ import {MarketProxy} from "./MarketProxy.sol";
  */
 
 contract MarketFactory {
-    // ======== Structs ========
-    struct Parameters {
-        string name;
-        string symbol;
-    }
-
     // ======== Immutable storage ========
-    // address for the logic contract
     address public immutable logic;
 
-    // ======== Mutable storage ========
-    Parameters public parameters;
-
     // ======== Constructor ========
-    // the constructor deploys an initial version that will act as a template
-    constructor(address _logic) {
-        logic = _logic;
+    constructor() {
+        logic = address(new MarketLogic());
     }
 
     // ======== Deploy contract ========
@@ -37,13 +28,17 @@ contract MarketFactory {
         external
         returns (address marketProxy)
     {
-        parameters = Parameters({name: _name, symbol: _symbol});
-
-        marketProxy = address(
-            new MarketProxy{salt: keccak256(abi.encode(_name, _symbol))}()
+        bytes memory _initializationCalldata = abi.encodeWithSignature(
+            "initialize(string,string)",
+            _name,
+            _symbol
         );
 
-        delete parameters;
-        return marketProxy;
+        marketProxy = address(
+            new BeaconProxy(
+                address(new UpgradeableBeacon(logic)),
+                _initializationCalldata
+            )
+        );
     }
 }
