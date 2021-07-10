@@ -15,41 +15,30 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
  */
 
 contract MarketFactory {
-    // ======== Structs ========
-    struct Parameters {
-        string name;
-        string symbol;
-    }
-
     // ======== Immutable storage ========
-    // address for the logic contract
-    address immutable logic;
-
-    // ======== Mutable storage ========
-    // Parameters public parameters;
+    address public immutable logic;
 
     // ======== Constructor ========
-    // the constructor deploys an initial version that will act as a template
     constructor() {
         logic = address(new MarketLogic());
     }
 
-    bytes4 private constant initialize =
-        bytes4(
-            keccak256("initialize(string memory _name, string memory _symbol)")
-        );
-
     // ======== Deploy contract ========
     function createMarket(string calldata _name, string calldata _symbol)
         external
-        returns (address)
+        returns (address marketProxy)
     {
-        // parameters = Parameters({name: _name, symbol: _symbol});
-        BeaconProxy proxy = new BeaconProxy(
-            address(UpgradeableBeacon(logic)),
-            abi.encodeWithSelector(initialize, _name, _symbol)
+        bytes memory _initializationCalldata = abi.encodeWithSignature(
+            "initialize(string,string)",
+            _name,
+            _symbol
         );
-        // delete parameters;
-        return address(proxy);
+
+        marketProxy = address(
+            new BeaconProxy(
+                address(new UpgradeableBeacon(logic)),
+                _initializationCalldata
+            )
+        );
     }
 }

@@ -2,8 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./BondingCurve.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title Market
@@ -14,7 +13,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
  * "It won't feel right 'till I feel like Phil Knight"
  */
 
-contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
+contract MarketLogic is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== constants ========
     // TODO fix this to reflect etherscan oracle
     uint256 internal maxGasPrice = 20 gwei;
@@ -42,6 +41,7 @@ contract MarketLogic is Initializable, BondingCurve, ReentrancyGuard {
     {
         name = _name;
         symbol = _symbol;
+        __ReentrancyGuard_init();
     }
 
     function mintStartingSupply() external payable returns (bool) {
