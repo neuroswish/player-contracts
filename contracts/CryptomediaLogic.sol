@@ -9,24 +9,24 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  * @title Market
  * @author neuroswish
  *
- * Build markets for the creation and curation of information
+ * Create Cryptomedia
  *
  * "It won't feel right 'till I feel like Phil Knight"
  */
 
-contract MarketLogic is BondingCurve, ReentrancyGuardUpgradeable {
+contract CryptomediaLogic is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== constants ========
     // TODO fix this to reflect etherscan oracle
     uint256 internal maxGasPrice = 20 gwei;
 
     // ======== immutable storage ========
-    string public name;
-    string public symbol;
+    string public mediaURI;
 
     // ======== mutable attributes ========
     uint256 public poolBalance;
     uint256 public supply;
     mapping(address => uint256) public tokenBalance;
+    mapping(address => address) public PNFT;
 
     /**
      * @notice Implement a ceiling on valid gas prices to mitigate front-running
@@ -36,13 +36,14 @@ contract MarketLogic is BondingCurve, ReentrancyGuardUpgradeable {
         _;
     }
 
+    //TODO finish
+    modifier isPlayer() {
+        _;
+    }
+
     // ======== Initialize new market ========
-    function initialize(string memory _name, string memory _symbol)
-        public
-        initializer
-    {
-        name = _name;
-        symbol = _symbol;
+    function initialize(string memory _mediaURI) public initializer {
+        mediaURI = _mediaURI;
         __ReentrancyGuard_init();
     }
 
