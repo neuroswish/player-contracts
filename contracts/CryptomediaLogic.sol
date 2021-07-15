@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "./BondingCurve.sol";
+import "./ContinuousToken.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  * "It won't feel right 'till I feel like Phil Knight"
  */
 
-contract CryptomediaLogic is BondingCurve, ReentrancyGuardUpgradeable {
+contract CryptomediaLogic is ContinuousToken, ReentrancyGuardUpgradeable {
     // ======== constants ========
     // TODO fix this to reflect etherscan oracle
     uint256 internal maxGasPrice = 20 gwei;
