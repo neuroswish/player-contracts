@@ -4,7 +4,7 @@ import "./BondingCurve.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title Bonding Curve
+ * @title Continuous Token
  * @author neuroswish
  *
  * Implement batched bonding curves governing the price and supply of continuous tokens
@@ -65,26 +65,6 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 tokens,
         uint256 eth
     ); // emit a sell event
-
-    // constructor(
-    //     string memory _name,
-    //     string memory _symbol,
-    //     uint8 _decimals,
-    //     uint256 _batchBlocks,
-    //     uint32 _reserveRatio,
-    //     uint256 _virtualSupply,
-    //     uint256 _virtualBalance
-    // ) public {
-    //     name = _name;
-    //     symbol = _symbol;
-    //     decimals = _decimals;
-
-    //     batchBlocks = _batchBlocks;
-
-    //     reserveRatio = _reserveRatio;
-    //     virtualSupply = _virtualSupply;
-    //     virtualBalance = _virtualBalance;
-    // }
 
     // intialize new continous token
     function initializeToken(

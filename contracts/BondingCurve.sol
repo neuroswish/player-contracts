@@ -108,4 +108,41 @@ contract BondingCurve is Power {
         uint256 quant2 = _poolBalance << precision;
         return (quant1 - quant2) / result;
     }
+
+    /**
+     * @dev given a price, reserve ratio, and slope value,
+     * calculates the token return when initializing the bonding curve supply
+     *
+     * Formula:
+     * return = (_price / (_reserveRatio * _slope)) ** _reserveRatio
+     *
+     * @param _price          liquid token supply
+     * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)
+     * @param _slope          amount of liquid tokens to get the target amount for
+     *
+     * @return initial token amount
+     */
+
+    function calculateInitializationReturn(
+        uint256 _price,
+        uint32 _reserveRatio,
+        uint256 _slope
+    ) public view returns (uint256) {
+        require(_reserveRatio > 0 && _reserveRatio <= maxRatio);
+        if (_price == 0) {
+            return 0;
+        }
+
+        if (_reserveRatio == maxRatio) {
+            return (_price / _slope);
+        }
+
+        uint256 temp;
+        uint256 precision;
+        uint256 baseN = _price;
+        uint256 baseD = _reserveRatio * _slope;
+        (temp, precision) = power(baseN, baseD, _reserveRatio, maxRatio);
+        uint256 result = temp >> precision;
+        return result;
+    }
 }
