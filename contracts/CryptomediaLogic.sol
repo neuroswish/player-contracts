@@ -43,8 +43,7 @@ contract CryptomediaLogic is ContinuousToken, ReentrancyGuardUpgradeable {
 
     // ======== Initialize new market ========
     function initialize(string memory _mediaURI) public initializer {
-        mediaURI = _mediaURI;
-        __ReentrancyGuard_init();
+        ContinuousToken.initialize();
     }
 
     // ======== Token functions ========
