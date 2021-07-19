@@ -26,6 +26,11 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public waitingClear; // ID of batch waiting to be cleared
     uint256 public batchBlocks; // number of blocks batches are to last
 
+    address payable beneficiary;
+    uint256 public constant buyFeePct = 10**17;
+    uint256 public constant sellFeePct = 10**17;
+    uint256 public constant pctBase = 10**18;
+
     // defining a batch of buys and sells that lasts over a number of blocks
     struct Batch {
         bool init; // batch has been initialized
@@ -38,6 +43,7 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 totalBuyReturn; // total number of tokens to be returned in batch
         uint256 totalSellSpend; // total number of tokens being sold in batch
         uint256 totalSellReturn; // total ETH being transfered to sellers in batch
+        uint256 totalCreatorFee; // total ETH from transaction fees transferred to creator
         mapping(address => uint256) buyers; // mapping of buyer to quantity of tokens he is buying
         mapping(address => uint256) sellers; // mapping of seller to quantity of tokens he is selling
     }
@@ -175,14 +181,20 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
         if (!cb.init) {
             initBatch(batch);
         }
+        // get creator fee
+        uint256 value = msg.value;
+        uint256 fee = (msg.value * buyFeePct) / pctBase;
+        value -= fee;
         // add the ETH being paid by the buyer to the total amount being spent for the current batch
-        cb.totalBuySpend += msg.value;
+        cb.totalBuySpend += value;
         // if the buyer has not been recorded as a buyer in the current batch, add the current batch ID (a block ID) to the list of blocks in which the user has a transaction
         if (cb.buyers[sender] == 0) {
             addressToBlocks[sender].push(batch);
         }
         // add the ETH being paid by the buyer to the total amount that he has spent in this batch
-        cb.buyers[sender] += msg.value;
+        cb.buyers[sender] += value;
+        // add the ETH from transaction fees to the total amount to be transferred to the creator in this batch
+        cb.totalCreatorFee += fee;
         // if all the above steps succeed, return true
         return true;
     }
@@ -239,6 +251,7 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
             _mint(address(this), cb.totalBuyReturn),
             "minting new tokens to be held until buyers collect must succeed"
         );
+        sendValue(beneficiary, cb.totalCreatorFee);
         cb.cleared = true;
         waitingClear = 0;
     }
@@ -325,11 +338,15 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
         Batch storage cb = batches[batch]; // claiming batch
         require(cb.cleared, "can't claim a batch that hasn't cleared");
         require(cb.sellers[sender] != 0, "this address has no sell to claim");
+        // calculate individual return
         uint256 individualSellReturn = (cb.totalSellReturn *
             cb.sellers[sender]) / cb.totalSellSpend;
         cb.sellers[sender] = 0;
-        // TODO implement a safe version of this transfer
+        // calculate creator fee
+        uint256 fee = (individualSellReturn * sellFeePct) / pctBase;
+        individualSellReturn -= fee;
         sendValue(payable(sender), individualSellReturn);
+        sendValue(beneficiary, fee);
     }
 
     function claimBuy(uint256 batch, address sender) public {
