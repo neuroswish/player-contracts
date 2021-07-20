@@ -29,8 +29,9 @@ contract CryptomediaFactory {
         returns (address cryptomediaProxy)
     {
         bytes memory _initializationCalldata = abi.encodeWithSignature(
-            "initialize(string)",
-            _mediaURI
+            "initialize(string,address)",
+            _mediaURI,
+            msg.sender
         );
 
         cryptomediaProxy = address(

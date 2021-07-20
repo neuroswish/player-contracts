@@ -4,7 +4,7 @@ import "./BondingCurve.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title Continuous Token
+ * @title Cryptomedia
  * @author neuroswish
  *
  * Implement batched bonding curves governing the price and supply of continuous tokens
@@ -12,9 +12,8 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
  * "All of you Mario, it's all a game"
  */
 
-contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
-    string public name; // token name
-    string public symbol; // token symbol
+contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
+    // ======== continuous token params ========
     uint256 public totalSupply; // total supply of tokens in circulation
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm = 1000000; // ppm units
@@ -26,10 +25,13 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public waitingClear; // ID of batch waiting to be cleared
     uint256 public batchBlocks; // number of blocks batches are to last
 
-    address payable beneficiary;
-    uint256 public constant buyFeePct = 10**17;
-    uint256 public constant sellFeePct = 10**17;
-    uint256 public constant pctBase = 10**18;
+    address payable creator;
+    uint256 public buyFeePct; // 10**17
+    uint256 public sellFeePct; // 10 **17
+    uint256 public pctBase = 10**18;
+
+    // ======== media params ========
+    string public mediaURI; // URI of media
 
     // defining a batch of buys and sells that lasts over a number of blocks
     struct Batch {
@@ -69,17 +71,30 @@ contract ContinuousToken is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 eth
     ); // emit a sell event
 
-    // intialize new continous token
-    function initializeToken(
-        string memory _name,
-        string memory _symbol,
+    // constructor
+    constructor(
+        uint32 _reserveRatio,
         uint256 _batchBlocks,
-        uint32 _reserveRatio
-    ) public initializer {
-        name = _name;
-        symbol = _symbol;
-        batchBlocks = _batchBlocks;
+        uint256 _slopeN,
+        uint256 _slopeD,
+        uint256 _buyFeePct,
+        uint256 _sellFeePct
+    ) {
         reserveRatio = _reserveRatio;
+        batchBlocks = _batchBlocks;
+        slopeN = _slopeN;
+        slopeD = _slopeD;
+        buyFeePct = _buyFeePct;
+        sellFeePct = _sellFeePct;
+    }
+
+    // intialize new cryptomedia
+    function initialize(string memory _mediaURI, address payable _creator)
+        public
+        initializer
+    {
+        mediaURI = _mediaURI;
+        creator = _creator;
         __ReentrancyGuard_init();
     }
 
