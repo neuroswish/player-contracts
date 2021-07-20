@@ -266,7 +266,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
             _mint(address(this), cb.totalBuyReturn),
             "minting new tokens to be held until buyers collect must succeed"
         );
-        sendValue(beneficiary, cb.totalCreatorFee);
+        sendValue(creator, cb.totalCreatorFee);
         cb.cleared = true;
         waitingClear = 0;
     }
@@ -361,7 +361,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 fee = (individualSellReturn * sellFeePct) / pctBase;
         individualSellReturn -= fee;
         sendValue(payable(sender), individualSellReturn);
-        sendValue(beneficiary, fee);
+        sendValue(creator, fee);
     }
 
     function claimBuy(uint256 batch, address sender) public {
