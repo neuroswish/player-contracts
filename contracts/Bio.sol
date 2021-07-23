@@ -4,33 +4,30 @@ import "./BondingCurve.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title Cryptomedia
+ * @title Bio
  * @author neuroswish
  *
- * Implement batched bonding curves governing the price and supply of continuous tokens
+ * Implement batched bonding curves governing the price and supply of continuous tokens bios
  *
  * "All of you Mario, it's all a game"
  */
 
 contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
-    // ======== continuous token params ========
+    // ======== Continuous token params ========
     uint256 public totalSupply; // total supply of tokens in circulation
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm = 1000000; // ppm units
-    uint256 public slopeN = 1; // slope numerator value for initial token return computation
-    uint256 public slopeD = 100000; // slope denominator value for initial token return computation
-
+    uint256 public slopeN; // slope numerator value for initial token return computation
+    uint256 public slopeD; // slope denominator value for initial token return computation
     uint256 public poolBalance; // ETH balance in contract pool
-
-    uint256 public waitingClear; // ID of batch waiting to be cleared
-    uint256 public batchBlocks; // number of blocks batches are to last
-
     address payable creator;
     uint256 public buyFeePct; // 10**17
     uint256 public sellFeePct; // 10 **17
     uint256 public pctBase = 10**18;
 
-    // defining a batch of buys and sells that lasts over a number of blocks
+    mapping(address => uint256) private balance; // mapping of an address to that user's token balance
+
+    // ======== Batch params ========
     struct Batch {
         bool init; // batch has been initialized
         bool buysCleared; // buys have been cleared
@@ -49,14 +46,71 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
 
     mapping(uint256 => Batch) public batches; // mapping of batch ID to batch
     mapping(address => uint256[]) public addressToBlocks; // mapping of a user to an array of block indices specifying the batch in which he has a transaction
+    uint256 public waitingClear; // ID of batch waiting to be cleared
+    uint256 public batchBlocks; // number of blocks batches are to last
 
-    mapping(address => uint256) private balance; // mapping of an address to that user's token balance
+    // ======== Media params ========
+    struct Media {
+        string URI; // content URI
+        address[] curators; // list of curators
+        uint256 stakedTokens; // total amount of tokens staked in media
+        mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
+    }
 
-    //TODO
-    string[] public mediaURIs;
-    mapping(string => uint256) stakedTokens;
-    mapping(string => address) mediaCreator;
+    Media[] public media; // array of all media posts
+    mapping(uint256 => Media) public indexToMedia;
+    uint256 mediaIndex = 0;
 
+    function create(string memory _contentURI, address _creator)
+        public
+        returns (bool)
+    {
+        require(_creator == creator);
+        Media storage newMedia = indexToMedia[mediaIndex];
+        newMedia.URI = _contentURI;
+        mediaIndex++;
+        return true;
+    }
+
+    // TODO create modifiers to check for creator status, if a potential curator has token balance, etc.
+    // TODO fix logic for updating quantity, etc. Actually should probably separate into add/remove functions
+
+    function addStake(
+        uint256 _mediaIndex,
+        address _curator,
+        uint256 _amountToAdd
+    ) public returns (bool) {
+        indexToMedia[_mediaIndex].amountStakedByCurator[
+            _curator
+        ] += _amountToAdd;
+        return true;
+    }
+
+    function removeStakeI(
+        uint256 _mediaIndex,
+        address _curator,
+        uint256 _amountToRemove
+    ) public returns (bool) {
+        require(
+            _amountToRemove <=
+                indexToMedia[_mediaIndex].amountStakedByCurator[_curator]
+        );
+        indexToMedia[_mediaIndex].amountStakedByCurator[
+            _curator
+        ] -= _amountToRemove;
+        return true;
+    }
+
+    function curate(
+        uint256 _index,
+        address _curator,
+        uint256 _tokenAmount
+    ) public returns (bool) {
+        indexToMedia[_index].amountStakedByCurator[_curator] = _tokenAmount;
+        return true;
+    }
+
+    // ======== Events ========
     event Mint(address indexed to, uint256 amount); // emit amount of tokens minted to a user
     event Burn(address indexed burner, uint256 amount); // emit amount of a user's token that are burned
     event Buy(
@@ -74,7 +128,7 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 eth
     ); // emit a sell event
 
-    // constructor
+    // ======== Constructor ========
     constructor(
         uint32 _reserveRatio,
         uint256 _batchBlocks,
@@ -91,11 +145,13 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
         sellFeePct = _sellFeePct;
     }
 
-    // intialize new cryptomedia
+    // ======== Initializer for new bio proxy ========
     function initialize(address payable _creator) public initializer {
         creator = _creator;
         __ReentrancyGuard_init();
     }
+
+    // ======== Functions ========
 
     // get the batch ID of the current batch
     function currentBatch() public view returns (uint256 cb) {
