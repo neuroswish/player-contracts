@@ -4,15 +4,15 @@ import "./BondingCurve.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title Bio
+ * @title Cryptomedia
  * @author neuroswish
  *
- * Implement batched bonding curves governing the price and supply of continuous tokens bios
+ * Implement batched bonding curves for continuous tokens governing cryptomedia
  *
  * "All of you Mario, it's all a game"
  */
 
-contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
+contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== Continuous token params ========
     uint256 public totalSupply; // total supply of tokens in circulation
     uint32 public reserveRatio; // reserve ratio in ppm
@@ -20,10 +20,12 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public slopeN; // slope numerator value for initial token return computation
     uint256 public slopeD; // slope denominator value for initial token return computation
     uint256 public poolBalance; // ETH balance in contract pool
-    address payable creator;
     uint256 public buyFeePct; // 10**17
     uint256 public sellFeePct; // 10 **17
     uint256 public pctBase = 10**18;
+    // ======== Player params ========
+    address payable creator;
+    address payable[] public beneficiaries;
 
     mapping(address => uint256) private balance; // mapping of an address to that user's token balance
 
@@ -49,64 +51,62 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public waitingClear; // ID of batch waiting to be cleared
     uint256 public batchBlocks; // number of blocks batches are to last
 
-    // ======== Media params ========
-    struct Media {
-        string URI; // content URI
-        address[] curators; // list of curators
-        uint256 stakedTokens; // total amount of tokens staked in media
+    // ======== Layer params ========
+    string public foundationURI; // URI of foundational layer
+    struct Layer {
+        address payable creator; // layer creator
+        string URI; // layer content URI
+        //address[] curators; // list of curators
+        uint256 stakedTokens; // total amount of tokens staked in layer
         mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
     }
 
-    Media[] public media; // array of all media posts
-    mapping(uint256 => Media) public indexToMedia;
-    uint256 mediaIndex = 0;
-
-    function create(string memory _contentURI, address _creator)
-        public
-        returns (bool)
-    {
-        require(_creator == creator);
-        Media storage newMedia = indexToMedia[mediaIndex];
-        newMedia.URI = _contentURI;
-        mediaIndex++;
-        return true;
+    Layer[] public layers; // array of all layers
+    //mapping(uint256 => Layer) public indexToLayer; // mapping from layer index to layer
+    mapping(address => uint256[]) public addressToLayerIndex; // mapping from address to layer index staked by that address
+    uint256 layerIndex = 0; // initialize layerIndex
+    enum Action {
+        Add,
+        Stake,
+        Remove
     }
 
-    // TODO create modifiers to check for creator status, if a potential curator has token balance, etc.
-    // TODO fix logic for updating quantity, etc. Actually should probably separate into add/remove functions
-
-    function addStake(
-        uint256 _mediaIndex,
-        address _curator,
-        uint256 _amountToAdd
+    function addLayer(
+        string memory _contentURI,
+        address payable _creator,
+        uint256 _tokensToStake
     ) public returns (bool) {
-        indexToMedia[_mediaIndex].amountStakedByCurator[
-            _curator
-        ] += _amountToAdd;
+        addBuy(_creator, _tokensToStake);
+        require(balance[_creator] >= _tokensToStake);
+        Layer storage newLayer = layers[layerIndex];
+        newLayer.URI = _contentURI;
+        addressToLayerIndex[_creator].push(layerIndex);
+        layerIndex++;
         return true;
     }
 
-    function removeStakeI(
-        uint256 _mediaIndex,
+    function remove(
+        uint256 _layerIndex,
         address _curator,
         uint256 _amountToRemove
-    ) public returns (bool) {
+    ) internal returns (bool) {
         require(
             _amountToRemove <=
-                indexToMedia[_mediaIndex].amountStakedByCurator[_curator]
+                layers[_layerIndex].amountStakedByCurator[_curator]
         );
-        indexToMedia[_mediaIndex].amountStakedByCurator[
-            _curator
-        ] -= _amountToRemove;
-        return true;
-    }
-
-    function curate(
-        uint256 _index,
-        address _curator,
-        uint256 _tokenAmount
-    ) public returns (bool) {
-        indexToMedia[_index].amountStakedByCurator[_curator] = _tokenAmount;
+        layers[_layerIndex].amountStakedByCurator[_curator] -= _amountToRemove;
+        // if stake is completely removed
+        if (layers[_layerIndex].amountStakedByCurator[_curator] == 0) {
+            // remove layer from user's portfolio
+            if (addressToLayerIndex[_curator].length > 1) {
+                addressToLayerIndex[_curator][
+                    _layerIndex
+                ] = addressToLayerIndex[_curator][
+                    addressToLayerIndex[_curator].length - 1
+                ];
+            }
+            addressToLayerIndex[_curator].pop();
+        }
         return true;
     }
 
@@ -145,9 +145,13 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
         sellFeePct = _sellFeePct;
     }
 
-    // ======== Initializer for new bio proxy ========
-    function initialize(address payable _creator) public initializer {
+    // ======== Initializer for new market proxy ========
+    function initialize(
+        string calldata _foundationURI,
+        address payable _creator
+    ) public initializer {
         creator = _creator;
+        foundationURI = _foundationURI;
         __ReentrancyGuard_init();
     }
 
@@ -244,7 +248,12 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // add a buy event to the current batch
-    function addBuy(address sender) public payable returns (bool) {
+    function addBuy(address payable _sender, uint256 _amount)
+        public
+        payable
+        returns (bool)
+    {
+        require(msg.value == _amount);
         uint256 batch = currentBatch(); // get the current batch ID
         Batch storage cb = batches[batch]; // get the current batch
         // if the current batch has not been initialized, initialize as a new batch
@@ -258,21 +267,21 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
         // add the ETH being paid by the buyer to the total amount being spent for the current batch
         cb.totalBuySpend += value;
         // if the buyer has not been recorded as a buyer in the current batch, add the current batch ID (a block ID) to the list of blocks in which the user has a transaction
-        if (cb.buyers[sender] == 0) {
-            addressToBlocks[sender].push(batch);
+        if (cb.buyers[_sender] == 0) {
+            addressToBlocks[_sender].push(batch);
         }
         // add the ETH being paid by the buyer to the total amount that he has spent in this batch
-        cb.buyers[sender] += value;
+        cb.buyers[_sender] += value;
         // add the ETH from transaction fees to the total amount to be transferred to the creator in this batch
         cb.totalCreatorFee += fee;
         // if all the above steps succeed, return true
         return true;
     }
 
-    function addSell(uint256 amount) public returns (bool) {
+    function addSell(uint256 _amount) public returns (bool) {
         // check to make sure the seller has enough tokens to sell
         require(
-            balanceOf(msg.sender) >= amount,
+            balanceOf(msg.sender) >= _amount,
             "insufficient funds for sell order"
         );
         uint256 batch = currentBatch(); // get the current batch ID
@@ -282,15 +291,15 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
             initBatch(batch);
         }
         // add the tokens being sold by the seller to the total amount being sold for the current batch
-        cb.totalSellSpend += amount;
+        cb.totalSellSpend += _amount;
         // if the seller has not been recorded as a seller in the current batch, add the current batch ID (a block ID) to the list of blocks in which the user has a transaction
         if (cb.sellers[msg.sender] == 0) {
             addressToBlocks[msg.sender].push(batch);
         }
         // add the tokens being sold by the seller to the total amount that he has sold in this batch
-        cb.sellers[msg.sender] += amount;
+        cb.sellers[msg.sender] += _amount;
         // check to make sure the seller's tokens get burned
-        require(_burn(msg.sender, amount), "burn must succeed");
+        require(_burn(msg.sender, _amount), "burn must succeed");
         // if all the above steps succeed, return true
         return true;
     }
@@ -419,21 +428,45 @@ contract Bio is BondingCurve, ReentrancyGuardUpgradeable {
         sendValue(creator, fee);
     }
 
-    function claimBuy(uint256 batch, address sender) public {
+    function claimBuy(
+        uint256 batch,
+        address _user,
+        Action _action
+    ) public {
+        //require(uint8(_action) <= 3);
         Batch storage cb = batches[batch]; // claiming batch
         require(cb.cleared, "can't claim a batch that hasn't cleared");
-        require(cb.buyers[sender] != 0, "this address has no buy to claim");
-        uint256 individualBuyReturn = (cb.buyers[sender] * cb.totalBuyReturn) /
+        require(cb.buyers[_user] != 0, "this address has no buy to claim");
+        uint256 individualBuyReturn = (cb.buyers[_user] * cb.totalBuyReturn) /
             cb.totalBuySpend;
-        cb.buyers[sender] = 0;
+        cb.buyers[_user] = 0;
         require(
             _burn(address(this), individualBuyReturn),
             "burn must succeed to close claim"
         );
         require(
-            _mint(sender, individualBuyReturn),
+            _mint(_user, individualBuyReturn),
             "mint must succeed to close claim"
         );
+        if (_action == Action.Add) {
+            return;
+        } else if (_action == Action.Stake) {}
+    }
+
+    mapping(address => mapping(uint256 => uint256)) addressQueue;
+
+    function stake(
+        uint256 _layerIndex,
+        address payable _curator,
+        uint256 _tokensToStake
+    ) public returns (bool) {
+        addBuy(_curator, _tokensToStake);
+        addressQueue[_curator][_layerIndex] += _tokensToStake;
+
+        require(balance[_curator] >= _tokensToStake);
+        layers[_layerIndex].amountStakedByCurator[_curator] += _tokensToStake;
+        addressToLayerIndex[_curator].push(layerIndex);
+        return true;
     }
 
     /// @dev Mint new tokens with ether
