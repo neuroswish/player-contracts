@@ -25,31 +25,12 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public pctBase = 10**18;
     // ======== Player params ========
     address payable creator;
-    address payable[] public beneficiaries;
-
-    mapping(address => uint256) private balance; // mapping of an address to that user's token balance
-
-    // ======== Batch params ========
-    struct Batch {
-        bool init; // batch has been initialized
-        bool buysCleared; // buys have been cleared
-        bool sellsCleared; // sells have been cleared
-        bool cleared; // batch has been cleared
-        uint256 poolBalance; // ETH balance in contract pool
-        uint256 totalSupply; // total supply of tokens
-        uint256 totalBuySpend; // total ETH being spent in batch to buy tokens
-        uint256 totalBuyReturn; // total number of tokens to be returned in batch
-        uint256 totalSellSpend; // total number of tokens being sold in batch
-        uint256 totalSellReturn; // total ETH being transfered to sellers in batch
-        uint256 totalCreatorFee; // total ETH from transaction fees transferred to creator
-        mapping(address => uint256) buyers; // mapping of buyer to quantity of tokens he is buying
-        mapping(address => uint256) sellers; // mapping of seller to quantity of tokens he is selling
-    }
-
-    mapping(uint256 => Batch) public batches; // mapping of batch ID to batch
-    mapping(address => uint256[]) public addressToBlocks; // mapping of a user to an array of block indices specifying the batch in which he has a transaction
-    uint256 public waitingClear; // ID of batch waiting to be cleared
-    uint256 public batchBlocks; // number of blocks batches are to last
+    uint256 creatorReward;
+    address payable[] beneficiaries;
+    mapping(address => uint256) beneficiaryIndex;
+    mapping(address => bool) addressIsBeneficiary;
+    mapping(address => uint256) beneficiaryRewards;
+    mapping(address => uint256) private totalBalance; // mapping of an address to that user's total token balance for this contract
 
     // ======== Layer params ========
     string public foundationURI; // URI of foundational layer
@@ -64,51 +45,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     Layer[] public layers; // array of all layers
     //mapping(uint256 => Layer) public indexToLayer; // mapping from layer index to layer
     mapping(address => uint256[]) public addressToLayerIndex; // mapping from address to layer index staked by that address
-    uint256 layerIndex = 0; // initialize layerIndex
-    enum Action {
-        Add,
-        Stake,
-        Remove
-    }
-
-    function addLayer(
-        string memory _contentURI,
-        address payable _creator,
-        uint256 _tokensToStake
-    ) public returns (bool) {
-        addBuy(_creator, _tokensToStake);
-        require(balance[_creator] >= _tokensToStake);
-        Layer storage newLayer = layers[layerIndex];
-        newLayer.URI = _contentURI;
-        addressToLayerIndex[_creator].push(layerIndex);
-        layerIndex++;
-        return true;
-    }
-
-    function remove(
-        uint256 _layerIndex,
-        address _curator,
-        uint256 _amountToRemove
-    ) internal returns (bool) {
-        require(
-            _amountToRemove <=
-                layers[_layerIndex].amountStakedByCurator[_curator]
-        );
-        layers[_layerIndex].amountStakedByCurator[_curator] -= _amountToRemove;
-        // if stake is completely removed
-        if (layers[_layerIndex].amountStakedByCurator[_curator] == 0) {
-            // remove layer from user's portfolio
-            if (addressToLayerIndex[_curator].length > 1) {
-                addressToLayerIndex[_curator][
-                    _layerIndex
-                ] = addressToLayerIndex[_curator][
-                    addressToLayerIndex[_curator].length - 1
-                ];
-            }
-            addressToLayerIndex[_curator].pop();
-        }
-        return true;
-    }
+    uint256 layerIndex = 1; // initialize layerIndex (foundational layer has index of 0)
 
     // ======== Events ========
     event Mint(address indexed to, uint256 amount); // emit amount of tokens minted to a user
@@ -130,15 +67,15 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
 
     // ======== Constructor ========
     constructor(
+        address payable _creator
         uint32 _reserveRatio,
-        uint256 _batchBlocks,
         uint256 _slopeN,
         uint256 _slopeD,
         uint256 _buyFeePct,
         uint256 _sellFeePct
     ) {
+        creator = _creator;
         reserveRatio = _reserveRatio;
-        batchBlocks = _batchBlocks;
         slopeN = _slopeN;
         slopeD = _slopeD;
         buyFeePct = _buyFeePct;
@@ -156,341 +93,180 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // ======== Functions ========
-
-    // get the batch ID of the current batch
-    function currentBatch() public view returns (uint256 cb) {
-        cb = (block.number / batchBlocks) * batchBlocks;
-    }
-
-    // given a user address, get the block numbers corresponding to the batch in which the user has a transaction
-    function getUserBlocks(address user)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        return addressToBlocks[user];
-    }
-
-    // given a user address, get the number of blocks corresponding to the batch in which the user has a transaction
-    function getUserBlocksLength(address user) public view returns (uint256) {
-        return addressToBlocks[user].length;
-    }
-
-    // given a user address & batch block index, get the corresponding block in which the user has a transaction
-    function getUserBlocksByIndex(address user, uint256 index)
-        public
-        view
-        returns (uint256)
-    {
-        return addressToBlocks[user][index];
-    }
-
-    // given a user address & batch block index, return whether user is a buyer
-    function isUserBuyerByBlock(address user, uint256 index)
-        public
-        view
-        returns (bool)
-    {
-        return batches[index].buyers[user] > 0;
-    }
-
-    // given a user address & batch block index, return whether user is a seller
-    function isUserSellerByBlock(address user, uint256 index)
-        public
-        view
-        returns (bool)
-    {
-        return batches[index].sellers[user] > 0;
-    }
-
-    // returns token price in parts per million
-    function getPricePPM(uint256 _totalSupply, uint256 _poolBalance)
-        public
-        view
-        returns (uint256)
-    {
-        return (uint256(ppm) * _poolBalance) / (_totalSupply * reserveRatio);
-    }
-
-    // calculate the amount of tokens to be minted given total supply, pool balance, and amount of ETH being paid
-    function getBuy(
+    function buy(
         uint256 _totalSupply,
         uint256 _poolBalance,
-        uint256 _price
-    ) public view returns (uint256) {
+        uint256 _price,
+        uint256 _minTokensReturned
+    ) internal nonReentrant returns (bool, uint256) {
+        require(msg.value == _price && msg.value > 0);
+        require(_minTokensReturned > 0);
+        // calculate creator and beneficiary fees
+        uint256 value = _price;
+        uint256 reward = (_price * buyFeePct) / pctBase;
+        value -= reward;
+        // calculate tokens returned
+        uint256 tokensReturned;
         if (_totalSupply == 0) {
-            uint256 slope = (slopeN / slopeD); // define initialization slope
-            return calculateInitializationReturn(_price, reserveRatio, slope); // get initialization return if supply is 0
+            uint256 slope = (slopeN / slopeD);
+            tokensReturned = calculateInitializationReturn(
+                value,
+                reserveRatio,
+                slope
+            );
+            require(
+                tokensReturned >= _minTokensReturned,
+                "quantity of tokens returned falls outside slippage tolerance"
+            );
         } else {
-            return
-                calculatePurchaseReturn(
-                    (_totalSupply),
-                    (_poolBalance),
-                    reserveRatio,
-                    _price
-                );
+            tokensReturned = calculatePurchaseReturn(
+                _totalSupply,
+                _poolBalance,
+                reserveRatio,
+                value
+            );
+            require(
+                tokensReturned >= _minTokensReturned,
+                "quantity of tokens returned falls outside slippage tolerance"
+            );
+        }
+        totalSupply += tokensReturned;
+        totalBalance[msg.sender] += tokensReturned;
+        if (!addressIsBeneficiary[msg.sender]) {
+            addressIsBeneficiary[msg.sender] = true;
+            beneficiaries.push(msg.sender);
+        }
+        poolBalance += value;
+        calculateRewards(reward, totalSupply);
+        return (true, tokensReturned);
+    }
+
+    function calculateRewards(uint256 _totalRewardAmount, uint256 _totalSupply)
+        internal
+    {
+        uint256 buyCreatorReward = _totalRewardAmount / 2;
+        creatorReward += buyCreatorReward;
+        uint256 totalBeneficiaryReward = buyCreatorReward;
+        for (uint256 i; i < beneficiaries.length; i++) {
+            address beneficiary = beneficiaries[i];
+            uint256 reward = totalBeneficiaryReward *
+                (totalBalance[beneficiary] / totalSupply);
+            beneficiaryRewards[beneficiary] += reward;
         }
     }
 
-    // calculate the amount of ETH to be exchanged given the total supply, pool balance, and quantity of tokens being sold
-    function getSell(
+    function sell(
         uint256 _totalSupply,
         uint256 _poolBalance,
-        uint256 _tokens
-    ) public view returns (uint256) {
-        return
-            calculateSaleReturn(
-                (_totalSupply),
-                (_poolBalance),
-                reserveRatio,
-                _tokens
-            );
+        uint256 _tokens,
+        uint256 _minETHReturned,
+        uint256 _layerIndex
+    ) internal nonReentrant returns (bool) {
+        require(
+            _tokens > 0 &&
+                layers[_layerIndex].amountStakedByCurator[msg.sender] >= _tokens
+        );
+        require(_minETHReturned > 0);
+        uint256 ethReturned = calculateSaleReturn(
+            _totalSupply,
+            _poolBalance,
+            reserveRatio,
+            _tokens
+        );
+        require(
+            ethReturned >= _minETHReturned,
+            "quantity of ETH returned falls outside slippage tolerance"
+        );
+        sendValue(payable(msg.sender), ethReturned);
+        poolBalance -= ethReturned;
+        layers[_layerIndex].amountStakedByCurator[msg.sender] -= _tokens;
+        totalSupply -= _tokens;
+        totalBalance[msg.sender] -= _tokens;
+        if (totalBalance[msg.sender] == 0) {
+            addressIsBeneficiary[msg.sender] = false;
+            for (uint256 i; i < beneficiaries.length; i++) {
+                if (beneficiaries[i] == msg.sender) {
+                    beneficiaries[i] = beneficiaries[beneficiaries.length - 1];
+                    beneficiaries.pop();
+                }
+            }
+        }
+        return true;
     }
 
-    // add a buy event to the current batch
-    function addBuy(address payable _sender, uint256 _amount)
+    function addLayer(string memory _contentURI, uint256 _minTokensToStake)
         public
         payable
         returns (bool)
     {
-        require(msg.value == _amount);
-        uint256 batch = currentBatch(); // get the current batch ID
-        Batch storage cb = batches[batch]; // get the current batch
-        // if the current batch has not been initialized, initialize as a new batch
-        if (!cb.init) {
-            initBatch(batch);
-        }
-        // get creator fee
-        uint256 value = msg.value;
-        uint256 fee = (msg.value * buyFeePct) / pctBase;
-        value -= fee;
-        // add the ETH being paid by the buyer to the total amount being spent for the current batch
-        cb.totalBuySpend += value;
-        // if the buyer has not been recorded as a buyer in the current batch, add the current batch ID (a block ID) to the list of blocks in which the user has a transaction
-        if (cb.buyers[_sender] == 0) {
-            addressToBlocks[_sender].push(batch);
-        }
-        // add the ETH being paid by the buyer to the total amount that he has spent in this batch
-        cb.buyers[_sender] += value;
-        // add the ETH from transaction fees to the total amount to be transferred to the creator in this batch
-        cb.totalCreatorFee += fee;
-        // if all the above steps succeed, return true
+        uint256 tokensReturned;
+        (, tokensReturned) = buy(
+            totalSupply,
+            poolBalance,
+            msg.value,
+            _minTokensToStake
+        );
+        Layer storage newLayer = layers[layerIndex];
+        newLayer.URI = _contentURI;
+        addressToLayerIndex[msg.sender].push(layerIndex);
+        layers[layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
+        layerIndex++;
         return true;
     }
 
-    function addSell(uint256 _amount) public returns (bool) {
-        // check to make sure the seller has enough tokens to sell
-        require(
-            balanceOf(msg.sender) >= _amount,
-            "insufficient funds for sell order"
+    function addStake(uint256 _layerIndex, uint256 _minTokensToStake)
+        public
+        payable
+        returns (bool)
+    {
+        uint256 tokensReturned;
+        (, tokensReturned) = buy(
+            totalSupply,
+            poolBalance,
+            msg.value,
+            _minTokensToStake
         );
-        uint256 batch = currentBatch(); // get the current batch ID
-        Batch storage cb = batches[batch]; // get the current batch
-        // if the current batch has not been initialized, initialize as a new batch
-        if (!cb.init) {
-            initBatch(batch);
-        }
-        // add the tokens being sold by the seller to the total amount being sold for the current batch
-        cb.totalSellSpend += _amount;
-        // if the seller has not been recorded as a seller in the current batch, add the current batch ID (a block ID) to the list of blocks in which the user has a transaction
-        if (cb.sellers[msg.sender] == 0) {
-            addressToBlocks[msg.sender].push(batch);
-        }
-        // add the tokens being sold by the seller to the total amount that he has sold in this batch
-        cb.sellers[msg.sender] += _amount;
-        // check to make sure the seller's tokens get burned
-        require(_burn(msg.sender, _amount), "burn must succeed");
-        // if all the above steps succeed, return true
+        layers[_layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
+        addressToLayerIndex[msg.sender].push(layerIndex);
         return true;
     }
 
-    // initialize a new batch
-    function initBatch(uint256 batch) internal {
-        clearBatch(); // clear any existing batches
-        batches[batch].poolBalance = poolBalance; // set the batch's pool balance to the contract's pool balance
-        batches[batch].totalSupply = totalSupply; // set the batch's total supply to the contract's total supply
-        batches[batch].init = true; // set initialization status to true
-        waitingClear = batch; // set the ID of the batch waiting to be cleared to the current batch's ID
-    }
-
-    // clear a batch
-    function clearBatch() public {
-        if (waitingClear == 0) return; // if no batch waiting to be cleared, return
-        require(waitingClear < currentBatch(), "Can't clear an active batch"); // check to make sure the batch (given number of batch blocks as specified in contract initialization) has elapsed before clearing it
-        Batch storage cb = batches[waitingClear]; // set cb to the batch that is waiting to be cleared
-        if (cb.cleared) return;
-        clearMatching();
-
-        poolBalance = cb.poolBalance;
-
-        // The supply was decremented when _burns took place as the sell orders came in.
-        // Now the supply needs to be incremented by totalBuyReturn.
-        // The resulting tokens are held by this contract until collected by the buyers
-        require(
-            _mint(address(this), cb.totalBuyReturn),
-            "minting new tokens to be held until buyers collect must succeed"
-        );
-        sendValue(creator, cb.totalCreatorFee);
-        cb.cleared = true;
-        waitingClear = 0;
-    }
-
-    function clearMatching() internal {
-        Batch storage cb = batches[waitingClear];
-
-        // the static price is the current exact price in collateral per token (in parts per million) according to the initial state of the batch
-        uint256 staticPrice = getPricePPM(cb.totalSupply, cb.poolBalance);
-
-        // We want to find out if there are more buy orders or more sell orders.
-        // To do this we check the result of all sells and all buys at the current exact price.
-        // If the result of the sells is larger than the pending buys, there are more sells.
-        // If the result of the buys is larger than the pending sells, there are more buys.
-        // Of course we don't really need to check both; if one is true the other is false.
-
-        uint256 resultOfSell = (cb.totalSellSpend * staticPrice) / ppm; // ETH
-
-        // We check if the result of the sells was more than the pending buys to determine if there were more sells than buys.
-        // If that is the case we will execute all pending buy orders at the current exact price, because there is at least one sell order for each buy.
-        // The remaining sell orders will be executed using the traditional bonding curve.
-        // The final sell price will be a combination of the exact price and the bonding curve price.
-        // Further down we will do the opposite if there are more buys than sells.
-
-        // if more sells than buys
-        if (resultOfSell >= cb.totalBuySpend) {
-            // totalBuyReturn is the number of tokens bought as a result of all buy orders combined at the currend exact price.
-            // We have already determined that this number is less than the total amount of tokens to be sold.
-            // tokens = totalBuySpend / staticPrice.
-            // staticPrice is in PPM; to avoid rounding errors it has been rearranged with PPM as a numerator
-            cb.totalBuyReturn = (cb.totalBuySpend * ppm) / staticPrice;
-            cb.buysCleared = true;
-
-            // We know there should be some tokens left over to be sold with the curve.
-            // These should be the difference between the original total sell order and the result of executing all the buys
-            uint256 remainingSell = cb.totalSellSpend - cb.totalBuyReturn;
-
-            // Now that we know how many tokens are left to be sold we can get the amount of collateral generated by selling them through normal bonding curve execution.
-            // This is based on the original supply and poolBalance (as if the buy orders never existed and the sell order was just smaller than originally thought).
-            uint256 remainingSellReturn = getSell(
-                cb.totalSupply,
-                cb.poolBalance,
-                remainingSell
-            );
-
-            // The total result of all sells is the original amount of buys which were matched, plus the remaining sells executed with the bonding curve.
-            cb.totalSellReturn = cb.totalBuySpend + remainingSellReturn;
-
-            // supply doesn't need to be changed
-            // It will be changed with the _mint and _burn functions
-            // poolBalance is ultimately only affected by the net difference between the buys and sells
-            cb.poolBalance -= remainingSellReturn;
-            cb.sellsCleared = true;
-            // more buys than sells
-        } else {
-            // Now in this scenario there were more buys than sells.
-            // This means that resultOfSell that we calculated earlier is the total result of sell
-            cb.totalSellReturn = resultOfSell; // ETH
-            cb.sellsCleared = true;
-
-            // There is some collateral left over to be spent as buy orders.
-            // This should be the difference between the original total buy order and the result of executing all the sells
-            uint256 remainingBuy = cb.totalBuySpend - resultOfSell; // residual ETH used to buy tokens
-
-            // Now that we know how much collateral is left to be spent we can get the amount of tokens generated by spending it through a normal bonding curve execution.
-            // This is based on the original supply and poolBalance (as if the sell orders never existed and the buy order was just smaller than originally thought).
-            uint256 remainingBuyReturn = getBuy(
-                cb.totalSupply,
-                cb.poolBalance,
-                remainingBuy
-            );
-
-            // totalBuyReturn becomes the combination of all the sell orders + the resulting tokens from the remaining buy orders
-            cb.totalBuyReturn = cb.totalSellSpend + remainingBuyReturn;
-
-            // Again, supply doesn't need to be changed, as it will be changed when the _mint function is called upon users claiming tokens
-            // poolBalance is ultimately only affected by the net difference between the buys and the sells
-            cb.poolBalance += remainingBuy;
-            cb.buysCleared = true;
-        }
-    }
-
-    function claimSell(uint256 batch, address sender) public nonReentrant {
-        Batch storage cb = batches[batch]; // claiming batch
-        require(cb.cleared, "can't claim a batch that hasn't cleared");
-        require(cb.sellers[sender] != 0, "this address has no sell to claim");
-        // calculate individual return
-        uint256 individualSellReturn = (cb.totalSellReturn *
-            cb.sellers[sender]) / cb.totalSellSpend;
-        cb.sellers[sender] = 0;
-        // calculate creator fee
-        uint256 fee = (individualSellReturn * sellFeePct) / pctBase;
-        individualSellReturn -= fee;
-        sendValue(payable(sender), individualSellReturn);
-        sendValue(creator, fee);
-    }
-
-    function claimBuy(
-        uint256 batch,
-        address _user,
-        Action _action
-    ) public {
-        //require(uint8(_action) <= 3);
-        Batch storage cb = batches[batch]; // claiming batch
-        require(cb.cleared, "can't claim a batch that hasn't cleared");
-        require(cb.buyers[_user] != 0, "this address has no buy to claim");
-        uint256 individualBuyReturn = (cb.buyers[_user] * cb.totalBuyReturn) /
-            cb.totalBuySpend;
-        cb.buyers[_user] = 0;
-        require(
-            _burn(address(this), individualBuyReturn),
-            "burn must succeed to close claim"
-        );
-        require(
-            _mint(_user, individualBuyReturn),
-            "mint must succeed to close claim"
-        );
-        if (_action == Action.Add) {
-            return;
-        } else if (_action == Action.Stake) {}
-    }
-
-    mapping(address => mapping(uint256 => uint256)) addressQueue;
-
-    function stake(
+    function removeStake(
         uint256 _layerIndex,
-        address payable _curator,
-        uint256 _tokensToStake
-    ) public returns (bool) {
-        addBuy(_curator, _tokensToStake);
-        addressQueue[_curator][_layerIndex] += _tokensToStake;
-
-        require(balance[_curator] >= _tokensToStake);
-        layers[_layerIndex].amountStakedByCurator[_curator] += _tokensToStake;
-        addressToLayerIndex[_curator].push(layerIndex);
+        uint256 _amountToRemove,
+        uint256 _minETHReturned
+    ) internal returns (bool) {
+        sell(
+            totalSupply,
+            poolBalance,
+            _amountToRemove,
+            _minETHReturned,
+            _layerIndex
+        );
+        // if stake is completely removed
+        if (layers[_layerIndex].amountStakedByCurator[msg.sender] == 0) {
+            // remove layer from user's portfolio
+            if (addressToLayerIndex[msg.sender].length > 1) {
+                addressToLayerIndex[msg.sender][
+                    _layerIndex
+                ] = addressToLayerIndex[msg.sender][
+                    addressToLayerIndex[msg.sender].length - 1
+                ];
+            }
+            addressToLayerIndex[msg.sender].pop();
+        }
         return true;
     }
 
-    /// @dev Mint new tokens with ether
-    /// @param minter The address of the user minting tokens
-    /// @param tokens The number of tokens to mint
-    function _mint(address minter, uint256 tokens) internal returns (bool) {
-        totalSupply += tokens;
-        balance[minter] += tokens;
-        emit Mint(minter, tokens);
+    function claimBeneficiaryReward(address payable _beneficiary) public returns(bool) {
+        require(addressIsBeneficiary[_beneficiary]);
+        sendValue(_beneficiary, beneficiaryRewards[_beneficiary]);
         return true;
     }
 
-    /// @dev Burn tokens to receive ether
-    /// @param burner The address of the user burning tokens
-    /// @param tokens The number of tokens to burn
-    function _burn(address burner, uint256 tokens) internal returns (bool) {
-        totalSupply -= tokens;
-        balance[burner] -= tokens;
-        emit Burn(burner, tokens);
-        return true;
-    }
-
-    function balanceOf(address account) public view virtual returns (uint256) {
-        return balance[account];
+    function claimCreatorReward(address payable _creator) public returns(bool) {
+        require(creator == _creator);
+        sendValue(_creator, creatorReward);
     }
 
     // ============ Utility ============
