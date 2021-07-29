@@ -39,7 +39,6 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 stakedTokens; // total amount of tokens staked in layer
         mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
     }
-
     Layer[] public layers; // array of all layers
     mapping(address => uint256[]) public addressToLayerIndex; // mapping from address to layer index staked by that address
     uint256 layerIndex = 1; // initialize layerIndex (foundational layer has index of 0)
