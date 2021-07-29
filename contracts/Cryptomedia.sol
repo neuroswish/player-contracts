@@ -14,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== Continuous token params ========
+    bool public supplyInitialized;
     uint256 public totalSupply; // total supply of tokens in circulation
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm = 1000000; // ppm units
@@ -44,6 +45,11 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 layerIndex = 1; // initialize layerIndex (foundational layer has index of 0)
 
     // ======== Events ========
+    event FoundationLayerAdded(
+        address indexed creator,
+        string foundationURI,
+        uint256 layerIndex
+    );
     event LayerAdded(
         address indexed layerCreator,
         string contentURI,
@@ -86,6 +92,12 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 eth
     );
 
+    // ======== Modifiers ========
+    modifier marketInitialized() {
+        require(supplyInitialized);
+        _;
+    }
+
     // ======== Constructor ========
     constructor(
         uint32 _reserveRatio,
@@ -100,14 +112,24 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // ======== Initializer for new market proxy ========
-    function initialize(
-        string calldata _foundationURI,
-        address _creator,
-        uint256 _eth
-    ) public payable initializer {
-        require(_eth == msg.value);
+    function initialize(string calldata _foundationURI, address _creator)
+        public
+        payable
+        initializer
+    {
         creator = _creator;
         foundationURI = _foundationURI;
+        Layer storage foundationalLayer = layers[layerIndex];
+        foundationalLayer.URI = _foundationURI;
+        foundationalLayer.layerCreator = creator;
+        emit FoundationLayerAdded(creator, _foundationURI, layerIndex);
+        __ReentrancyGuard_init();
+    }
+
+    // ======== Functions ========
+    function initializeSupply(uint256 _eth) public payable {
+        require(msg.sender == creator);
+        require(_eth == msg.value);
         uint256 tokensReturned;
         uint256 slope = (slopeN / slopeD);
         tokensReturned = calculateInitializationReturn(
@@ -119,24 +141,19 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         totalBalance[creator] += tokensReturned;
         poolBalance += _eth;
         emit InitialSupplyCreated(creator, poolBalance, totalSupply, msg.value);
-        Layer storage foundationalLayer = layers[layerIndex];
-        foundationalLayer.URI = _foundationURI;
-        foundationalLayer.layerCreator = creator;
-        foundationalLayer.stakedTokens += tokensReturned;
-        foundationalLayer.amountStakedByCurator[creator] += tokensReturned;
+        layers[layerIndex].stakedTokens += tokensReturned;
+        layers[layerIndex].amountStakedByCurator[creator] += tokensReturned;
         addressToLayerIndex[creator].push(layerIndex);
         layerIndex++;
-        emit LayerAdded(creator, _foundationURI, layerIndex, tokensReturned);
-        __ReentrancyGuard_init();
+        supplyInitialized = true;
     }
 
-    // ======== Functions ========
     function buy(
         uint256 _totalSupply,
         uint256 _poolBalance,
         uint256 _price,
         uint256 _minTokensReturned
-    ) internal returns (bool, uint256) {
+    ) internal marketInitialized returns (bool, uint256) {
         require(msg.value == _price && msg.value > 0);
         require(_minTokensReturned > 0);
         // calculate creator and beneficiary fees
@@ -199,7 +216,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 _tokens,
         uint256 _minETHReturned,
         uint256 _layerIndex
-    ) internal nonReentrant returns (bool) {
+    ) internal marketInitialized nonReentrant returns (bool) {
         require(
             _tokens > 0 &&
                 layers[_layerIndex].amountStakedByCurator[msg.sender] >= _tokens
@@ -236,6 +253,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     function addLayer(string memory _contentURI, uint256 _minTokensToStake)
         public
         payable
+        marketInitialized
         returns (bool)
     {
         uint256 tokensReturned;
@@ -259,6 +277,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     function addStake(uint256 _layerIndex, uint256 _minTokensToStake)
         public
         payable
+        marketInitialized
         returns (bool)
     {
         uint256 tokensReturned;
@@ -278,7 +297,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 _layerIndex,
         uint256 _amountToRemove,
         uint256 _minETHReturned
-    ) internal returns (bool) {
+    ) internal marketInitialized returns (bool) {
         sell(
             totalSupply,
             poolBalance,
@@ -304,6 +323,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
 
     function claimBeneficiaryReward(address _beneficiary)
         public
+        marketInitialized
         nonReentrant
         returns (bool)
     {
@@ -315,6 +335,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
 
     function claimCreatorReward(address _creator)
         public
+        marketInitialized
         nonReentrant
         returns (bool)
     {

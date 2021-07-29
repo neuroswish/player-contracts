@@ -20,8 +20,7 @@ contract CryptomediaFactory {
     event cryptomediaDeployed(
         address indexed contractAddress,
         address indexed creator,
-        string foundationURI,
-        uint256 eth
+        string foundationURI
     );
 
     // ======== Constructor ========
@@ -36,16 +35,7 @@ contract CryptomediaFactory {
         returns (address cryptomedia)
     {
         cryptomedia = Clones.clone(logic);
-        Cryptomedia(cryptomedia).initialize(
-            _foundationLayerURI,
-            msg.sender,
-            msg.value
-        );
-        emit cryptomediaDeployed(
-            cryptomedia,
-            msg.sender,
-            _foundationLayerURI,
-            msg.value
-        );
+        Cryptomedia(cryptomedia).initialize(_foundationLayerURI, msg.sender);
+        emit cryptomediaDeployed(cryptomedia, msg.sender, _foundationLayerURI);
     }
 }
