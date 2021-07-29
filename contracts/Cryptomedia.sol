@@ -24,9 +24,9 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public sellFeePct; // 10 **17
     uint256 public pctBase = 10**18;
     // ======== Player params ========
-    address payable creator;
+    address creator;
     uint256 creatorReward;
-    address payable[] beneficiaries;
+    address[] beneficiaries;
     mapping(address => uint256) beneficiaryIndex;
     mapping(address => bool) addressIsBeneficiary;
     mapping(address => uint256) beneficiaryRewards;
@@ -35,9 +35,8 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== Layer params ========
     string public foundationURI; // URI of foundational layer
     struct Layer {
-        address payable creator; // layer creator
+        address layerCreator; // layer creator
         string URI; // layer content URI
-        //address[] curators; // list of curators
         uint256 stakedTokens; // total amount of tokens staked in layer
         mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
     }
@@ -67,14 +66,12 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
 
     // ======== Constructor ========
     constructor(
-        address payable _creator
         uint32 _reserveRatio,
         uint256 _slopeN,
         uint256 _slopeD,
         uint256 _buyFeePct,
         uint256 _sellFeePct
     ) {
-        creator = _creator;
         reserveRatio = _reserveRatio;
         slopeN = _slopeN;
         slopeD = _slopeD;
@@ -83,10 +80,10 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // ======== Initializer for new market proxy ========
-    function initialize(
-        string calldata _foundationURI,
-        address payable _creator
-    ) public initializer {
+    function initialize(string calldata _foundationURI, address _creator)
+        public
+        initializer
+    {
         creator = _creator;
         foundationURI = _foundationURI;
         __ReentrancyGuard_init();
@@ -137,13 +134,11 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
             beneficiaries.push(msg.sender);
         }
         poolBalance += value;
-        calculateRewards(reward, totalSupply);
+        calculateRewards(reward);
         return (true, tokensReturned);
     }
 
-    function calculateRewards(uint256 _totalRewardAmount, uint256 _totalSupply)
-        internal
-    {
+    function calculateRewards(uint256 _totalRewardAmount) internal {
         uint256 buyCreatorReward = _totalRewardAmount / 2;
         creatorReward += buyCreatorReward;
         uint256 totalBeneficiaryReward = buyCreatorReward;
@@ -177,11 +172,11 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
             ethReturned >= _minETHReturned,
             "quantity of ETH returned falls outside slippage tolerance"
         );
-        sendValue(payable(msg.sender), ethReturned);
         poolBalance -= ethReturned;
         layers[_layerIndex].amountStakedByCurator[msg.sender] -= _tokens;
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
+        sendValue(msg.sender, ethReturned);
         if (totalBalance[msg.sender] == 0) {
             addressIsBeneficiary[msg.sender] = false;
             for (uint256 i; i < beneficiaries.length; i++) {
@@ -208,8 +203,10 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         );
         Layer storage newLayer = layers[layerIndex];
         newLayer.URI = _contentURI;
+        newLayer.layerCreator = msg.sender;
+        newLayer.stakedTokens += tokensReturned;
+        newLayer.amountStakedByCurator[msg.sender] += tokensReturned;
         addressToLayerIndex[msg.sender].push(layerIndex);
-        layers[layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
         layerIndex++;
         return true;
     }
@@ -258,27 +255,36 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         return true;
     }
 
-    function claimBeneficiaryReward(address payable _beneficiary) public returns(bool) {
+    function claimBeneficiaryReward(address _beneficiary)
+        public
+        nonReentrant
+        returns (bool)
+    {
         require(addressIsBeneficiary[_beneficiary]);
         sendValue(_beneficiary, beneficiaryRewards[_beneficiary]);
         return true;
     }
 
-    function claimCreatorReward(address payable _creator) public returns(bool) {
+    function claimCreatorReward(address _creator)
+        public
+        nonReentrant
+        returns (bool)
+    {
         require(creator == _creator);
         sendValue(_creator, creatorReward);
+        return true;
     }
 
     // ============ Utility ============
 
-    function sendValue(address payable recipient, uint256 amount) internal {
+    function sendValue(address recipient, uint256 amount) internal {
         require(
             address(this).balance >= amount,
             "Address: insufficient balance"
         );
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success, ) = payable(recipient).call{value: amount}("");
         require(
             success,
             "Address: unable to send value, recipient may have reverted"
