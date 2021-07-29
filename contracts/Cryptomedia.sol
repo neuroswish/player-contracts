@@ -100,12 +100,33 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // ======== Initializer for new market proxy ========
-    function initialize(string calldata _foundationURI, address _creator)
-        public
-        initializer
-    {
+    function initialize(
+        string calldata _foundationURI,
+        address _creator,
+        uint256 _eth
+    ) public payable initializer {
+        require(_eth == msg.value);
         creator = _creator;
         foundationURI = _foundationURI;
+        uint256 tokensReturned;
+        uint256 slope = (slopeN / slopeD);
+        tokensReturned = calculateInitializationReturn(
+            msg.value,
+            reserveRatio,
+            slope
+        );
+        totalSupply += tokensReturned;
+        totalBalance[creator] += tokensReturned;
+        poolBalance += _eth;
+        emit InitialSupplyCreated(creator, poolBalance, totalSupply, msg.value);
+        Layer storage foundationalLayer = layers[layerIndex];
+        foundationalLayer.URI = _foundationURI;
+        foundationalLayer.layerCreator = creator;
+        foundationalLayer.stakedTokens += tokensReturned;
+        foundationalLayer.amountStakedByCurator[creator] += tokensReturned;
+        addressToLayerIndex[creator].push(layerIndex);
+        layerIndex++;
+        emit LayerAdded(creator, _foundationURI, layerIndex, tokensReturned);
         __ReentrancyGuard_init();
     }
 
@@ -115,7 +136,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 _poolBalance,
         uint256 _price,
         uint256 _minTokensReturned
-    ) internal nonReentrant returns (bool, uint256) {
+    ) internal returns (bool, uint256) {
         require(msg.value == _price && msg.value > 0);
         require(_minTokensReturned > 0);
         // calculate creator and beneficiary fees
