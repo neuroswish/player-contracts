@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
  * @title Cryptomedia
  * @author neuroswish
  *
- * Implement batched bonding curves for continuous tokens governing cryptomedia
+ * Implement continuous tokens governing cryptomedia
  *
  * "All of you Mario, it's all a game"
  */
@@ -20,8 +20,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     uint256 public slopeN; // slope numerator value for initial token return computation
     uint256 public slopeD; // slope denominator value for initial token return computation
     uint256 public poolBalance; // ETH balance in contract pool
-    uint256 public buyFeePct; // 10**17
-    uint256 public sellFeePct; // 10 **17
+    uint256 public feePct; // 10**17
     uint256 public pctBase = 10**18;
     // ======== Player params ========
     address creator;
@@ -42,41 +41,63 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     Layer[] public layers; // array of all layers
-    //mapping(uint256 => Layer) public indexToLayer; // mapping from layer index to layer
     mapping(address => uint256[]) public addressToLayerIndex; // mapping from address to layer index staked by that address
     uint256 layerIndex = 1; // initialize layerIndex (foundational layer has index of 0)
 
     // ======== Events ========
-    event Mint(address indexed to, uint256 amount); // emit amount of tokens minted to a user
-    event Burn(address indexed burner, uint256 amount); // emit amount of a user's token that are burned
-    event Buy(
-        address indexed to,
+    event LayerAdded(
+        address indexed layerCreator,
+        string contentURI,
+        uint256 layerIndex,
+        uint256 tokensStaked
+    );
+    event Staked(
+        address indexed curator,
+        uint256 layerIndex,
+        uint256 tokensStaked
+    );
+    event Removed(
+        address indexed curator,
+        uint256 layerIndex,
+        uint256 tokensRemoved
+    );
+    event CreatorClaimed(address indexed creator);
+    event BeneficiaryClaimed(address indexed beneficiary);
+    event InitialSupplyCreated(
+        address indexed buyer,
         uint256 poolBalance,
-        uint256 supply,
+        uint256 totalSupply,
+        uint256 price
+    );
+    event Buy(
+        address indexed buyer,
+        uint256 poolBalance,
+        uint256 totalSupply,
         uint256 tokens,
         uint256 price
-    ); // emit a buy event
+    );
+
+    event RewardsAdded(uint256 totalRewardAmount);
+
     event Sell(
-        address indexed from,
+        address indexed seller,
         uint256 poolBalance,
-        uint256 supply,
+        uint256 totalSupply,
         uint256 tokens,
         uint256 eth
-    ); // emit a sell event
+    );
 
     // ======== Constructor ========
     constructor(
         uint32 _reserveRatio,
         uint256 _slopeN,
         uint256 _slopeD,
-        uint256 _buyFeePct,
-        uint256 _sellFeePct
+        uint256 _feePct
     ) {
         reserveRatio = _reserveRatio;
         slopeN = _slopeN;
         slopeD = _slopeD;
-        buyFeePct = _buyFeePct;
-        sellFeePct = _sellFeePct;
+        feePct = _feePct;
     }
 
     // ======== Initializer for new market proxy ========
@@ -100,7 +121,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         require(_minTokensReturned > 0);
         // calculate creator and beneficiary fees
         uint256 value = _price;
-        uint256 reward = (_price * buyFeePct) / pctBase;
+        uint256 reward = (_price * feePct) / pctBase;
         value -= reward;
         // calculate tokens returned
         uint256 tokensReturned;
@@ -134,6 +155,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
             beneficiaries.push(msg.sender);
         }
         poolBalance += value;
+        emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, value);
         calculateRewards(reward);
         return (true, tokensReturned);
     }
@@ -148,6 +170,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
                 (totalBalance[beneficiary] / totalSupply);
             beneficiaryRewards[beneficiary] += reward;
         }
+        emit RewardsAdded(_totalRewardAmount);
     }
 
     function sell(
@@ -177,6 +200,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
         sendValue(msg.sender, ethReturned);
+        emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
         if (totalBalance[msg.sender] == 0) {
             addressIsBeneficiary[msg.sender] = false;
             for (uint256 i; i < beneficiaries.length; i++) {
@@ -208,6 +232,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         newLayer.amountStakedByCurator[msg.sender] += tokensReturned;
         addressToLayerIndex[msg.sender].push(layerIndex);
         layerIndex++;
+        emit LayerAdded(msg.sender, _contentURI, layerIndex, tokensReturned);
         return true;
     }
 
@@ -225,6 +250,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
         );
         layers[_layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
         addressToLayerIndex[msg.sender].push(layerIndex);
+        emit Staked(msg.sender, _layerIndex, tokensReturned);
         return true;
     }
 
@@ -240,6 +266,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
             _minETHReturned,
             _layerIndex
         );
+        emit Removed(msg.sender, _layerIndex, _amountToRemove);
         // if stake is completely removed
         if (layers[_layerIndex].amountStakedByCurator[msg.sender] == 0) {
             // remove layer from user's portfolio
@@ -262,6 +289,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     {
         require(addressIsBeneficiary[_beneficiary]);
         sendValue(_beneficiary, beneficiaryRewards[_beneficiary]);
+        emit BeneficiaryClaimed(_beneficiary);
         return true;
     }
 
@@ -272,6 +300,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     {
         require(creator == _creator);
         sendValue(_creator, creatorReward);
+        emit CreatorClaimed(_creator);
         return true;
     }
 

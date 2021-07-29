@@ -16,10 +16,16 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 contract CryptomediaFactory {
     // ======== Immutable storage ========
     address public immutable logic;
+    // ======== Events ========
+    event cryptomediaDeployed(
+        address indexed contractAddress,
+        address indexed creator,
+        string foundationURI
+    );
 
     // ======== Constructor ========
     constructor() {
-        logic = address(new Cryptomedia(333333, 1, 100000, 10**17, 10**17));
+        logic = address(new Cryptomedia(333333, 1, 100000, 10**17));
     }
 
     // ======== Deploy contract ========
@@ -29,5 +35,6 @@ contract CryptomediaFactory {
     {
         cryptomedia = Clones.clone(logic);
         Cryptomedia(cryptomedia).initialize(_foundationLayerURI, msg.sender);
+        emit cryptomediaDeployed(cryptomedia, msg.sender, _foundationLayerURI);
     }
 }
