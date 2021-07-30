@@ -112,7 +112,7 @@ contract Cryptomedia is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // ======== Initializer for new market proxy ========
-    function initialize(string calldata _foundationURI, address _creator)
+    function initialize(address _creator, string calldata _foundationURI)
         public
         payable
         initializer

@@ -35,7 +35,7 @@ contract CryptomediaFactory {
         returns (address cryptomedia)
     {
         cryptomedia = Clones.clone(logic);
-        Cryptomedia(cryptomedia).initialize(_foundationLayerURI, msg.sender);
+        Cryptomedia(cryptomedia).initialize(msg.sender, _foundationLayerURI);
         emit cryptomediaDeployed(cryptomedia, msg.sender, _foundationLayerURI);
     }
 }
