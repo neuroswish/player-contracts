@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-contract CryptomediaStorage {
+/**
+ * @title Market Storage
+ * @author neuroswish
+ *
+ * Declare storage variables for layered cryptomedia markets
+ *
+ * "Four in the morning, and I'm zoning. They say I'm possessed, it's an omen"
+ */
+
+contract MarketStorage {
     // ======== Continuous token params ========
     bool public supplyInitialized;
     uint256 public totalSupply; // total supply of tokens in circulation

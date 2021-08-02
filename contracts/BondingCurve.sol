@@ -41,11 +41,8 @@ contract BondingCurve is Power {
             return (_supply * _price) / _poolBalance;
         }
 
-        uint256 result;
-        uint8 precision;
-
         uint256 baseN = _price + _poolBalance;
-        (result, precision) = power(
+        (uint256 result, uint8 precision) = power(
             baseN,
             _poolBalance,
             _reserveRatio,
@@ -100,10 +97,12 @@ contract BondingCurve is Power {
             return (_reserveRatio * _tokens) / _supply;
         }
 
-        uint256 result;
-        uint8 precision;
-        uint256 baseD = _supply - _tokens;
-        (result, precision) = power(_supply, baseD, maxRatio, _reserveRatio);
+        (uint256 result, uint8 precision) = power(
+            _supply,
+            (_supply - _tokens),
+            maxRatio,
+            _reserveRatio
+        );
         uint256 quant1 = _poolBalance * result;
         uint256 quant2 = _poolBalance << precision;
         return (quant1 - quant2) / result;
@@ -136,12 +135,12 @@ contract BondingCurve is Power {
         if (_reserveRatio == maxRatio) {
             return (_price / _slope);
         }
-
-        uint256 temp;
-        uint256 precision;
-        uint256 baseN = _price;
-        uint256 baseD = _reserveRatio * _slope;
-        (temp, precision) = power(baseN, baseD, _reserveRatio, maxRatio);
+        (uint256 temp, uint256 precision) = power(
+            _price,
+            (_reserveRatio * _slope),
+            _reserveRatio,
+            maxRatio
+        );
         uint256 result = temp >> precision;
         return result;
     }

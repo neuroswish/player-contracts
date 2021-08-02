@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 import "./BondingCurve.sol";
-import "./CryptomediaStorage.sol";
+import "./MarketStorage.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title Cryptomedia
+ * @title Market
  * @author neuroswish
  *
- * Implement continuous tokens governing cryptomedia
+ * Implement layered cryptomedia markets
  *
  * "All of you Mario, it's all a game"
  */
 
-contract Cryptomedia is
-    CryptomediaStorage,
-    BondingCurve,
-    ReentrancyGuardUpgradeable
-{
+contract Market is MarketStorage, BondingCurve, ReentrancyGuardUpgradeable {
     // ======== Events ========
     event FoundationLayerAdded(
         address indexed creator,

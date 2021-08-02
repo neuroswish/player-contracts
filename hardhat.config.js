@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require('hardhat-contract-sizer');
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -25,6 +26,11 @@ module.exports = {
     hardhat: {
       chainId: 1337
     }
+  },
+  contractSizer: {
+    alphaSort: false,
+    runOnCompile: true,
+    disambiguatePaths: false,
   }
 };
 
