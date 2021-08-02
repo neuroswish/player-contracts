@@ -203,6 +203,7 @@ contract Market is MarketStorage, BondingCurve, ReentrancyGuardUpgradeable {
             "quantity of ETH returned falls outside slippage tolerance"
         );
         poolBalance -= ethReturned;
+        layers[_layerIndex].stakedTokens -= _tokens;
         layers[_layerIndex].amountStakedByCurator[msg.sender] -= _tokens;
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
@@ -257,6 +258,7 @@ contract Market is MarketStorage, BondingCurve, ReentrancyGuardUpgradeable {
             msg.value,
             _minTokensToStake
         );
+        layers[_layerIndex].stakedTokens += tokensReturned;
         layers[_layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
         addressToLayerIndex[msg.sender].push(layerIndex);
         emit Staked(msg.sender, _layerIndex, tokensReturned);
