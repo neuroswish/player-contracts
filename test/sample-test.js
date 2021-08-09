@@ -1,4 +1,8 @@
-const { expect } = require("chai");
+// SPDX-License-Identifier: MIT
+// ============ External Imports ============
+const { waffle } = require('hardhat');
+const { provider } = waffle;
+const { expect } = require('chai');
 
 describe("Greeter", function() {
   it("Should return the new greeting once it's changed", async function() {
