@@ -14,6 +14,14 @@
     "@chainlink/contracts": "^0.2.0",
     "@chainlink/external-adapter": "^0.2.6",
     "@openzeppelin/contracts": "^4.2.0",
-    "@openzeppelin/contracts-upgradeable": "^4.2.0"
+    "@openzeppelin/contracts-upgradeable": "^4.2.0",
+    "@typechain/ethers-v5": "^7.0.1",
+    "@typechain/hardhat": "^2.3.0",
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.4.13",
+    "ts-node": "^10.2.0",
+    "typechain": "^5.1.2",
+    "typescript": "^4.3.5"
   }
 }

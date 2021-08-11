@@ -25,7 +25,8 @@ contract MarketFactory {
 
     // ======== Constructor ========
     constructor() {
-        logic = address(new Market(333333, 1, 100000, 10**17));
+        // logic = address(new Market(333333, 1, 100000, 10**17));
+        logic = address(new Market());
     }
 
     // ======== Deploy contract ========

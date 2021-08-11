@@ -16,22 +16,22 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== Continuous token params ========
     bool public supplyInitialized;
     uint256 public totalSupply; // total supply of tokens in circulation
-    uint32 public reserveRatio; // reserve ratio in ppm
+    uint32 public reserveRatio = 333333; // reserve ratio in ppm
     uint32 public ppm = 1000000; // ppm units
-    uint256 public slopeN; // slope numerator value for initial token return computation
-    uint256 public slopeD; // slope denominator value for initial token return computation
+    uint256 public slopeN = 1; // slope numerator value for initial token return computation
+    uint256 public slopeD = 100000; // slope denominator value for initial token return computation
     uint256 public poolBalance; // ETH balance in contract pool
-    uint256 public feePct; // 10**17
+    uint256 public feePct = 10**17; // 10**17
     uint256 public pctBase = 10**18;
 
     // ======== Player params ========
-    address creator;
+    address payable public creator;
     uint256 creatorReward;
     address[] beneficiaries;
-    mapping(address => uint256) beneficiaryIndex;
-    mapping(address => bool) addressIsBeneficiary;
-    mapping(address => uint256) beneficiaryRewards;
-    mapping(address => uint256) totalBalance; // mapping of an address to that user's total token balance for this contract
+    mapping(address => uint256) public beneficiaryIndex;
+    mapping(address => bool) public addressIsBeneficiary;
+    mapping(address => uint256) public beneficiaryRewards;
+    mapping(address => uint256) public totalBalance; // mapping of an address to that user's total token balance for this contract
 
     // ======== Layer params ========
     string public foundationURI; // URI of foundational layer
@@ -39,11 +39,21 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         address layerCreator; // layer creator
         string URI; // layer content URI
         uint256 stakedTokens; // total amount of tokens staked in layer
-        mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
+        //mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
     }
     Layer[] public layers; // array of all layers
-    mapping(address => uint256[]) public addressToLayerIndex; // mapping from address to layer index staked by that address
-    uint256 layerIndex = 0; // initialize layerIndex (foundational layer has index of 0)
+    mapping(address => uint256[]) public addressToLayerIndex; // mapping from a curator address to layer index staked by that address
+    uint256 layerIndex = 0; // initialize layerIndex (foundational layer will have an index of 0)
+    mapping(uint256 => mapping(address => uint256)) layerIndexToStakes;
+
+    function getLayerCreator(uint256 _layerIndex)
+        public
+        view
+        returns (address)
+    {
+        Layer memory matchingLayer = layers[_layerIndex];
+        return (matchingLayer.layerCreator);
+    }
 
     // ======== Events ========
     event FoundationLayerAdded(
@@ -100,17 +110,17 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     }
 
     // ======== Constructor ========
-    constructor(
-        uint32 _reserveRatio,
-        uint256 _slopeN,
-        uint256 _slopeD,
-        uint256 _feePct
-    ) {
-        reserveRatio = _reserveRatio;
-        slopeN = _slopeN;
-        slopeD = _slopeD;
-        feePct = _feePct;
-    }
+    // constructor(
+    //     uint32 _reserveRatio,
+    //     uint256 _slopeN,
+    //     uint256 _slopeD,
+    //     uint256 _feePct
+    // ) {
+    //     reserveRatio = _reserveRatio;
+    //     slopeN = _slopeN;
+    //     slopeD = _slopeD;
+    //     feePct = _feePct;
+    // }
 
     // ======== Initializer for new market proxy ========
     function initialize(address _creator, string calldata _foundationURI)
@@ -118,11 +128,12 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         payable
         initializer
     {
-        creator = _creator;
+        creator = payable(_creator);
         foundationURI = _foundationURI;
-        Layer storage foundationalLayer = layers[layerIndex];
+        Layer memory foundationalLayer;
         foundationalLayer.URI = _foundationURI;
         foundationalLayer.layerCreator = creator;
+        layers.push(foundationalLayer);
         emit FoundationLayerAdded(creator, _foundationURI, layerIndex);
         __ReentrancyGuard_init();
     }
@@ -143,7 +154,8 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         poolBalance += _eth;
         emit InitialSupplyCreated(creator, poolBalance, totalSupply, msg.value);
         layers[layerIndex].stakedTokens += tokensReturned;
-        layers[layerIndex].amountStakedByCurator[creator] += tokensReturned;
+        layerIndexToStakes[layerIndex][creator] += tokensReturned;
+        //layers[layerIndex].amountStakedByCurator[creator] += tokensReturned;
         addressToLayerIndex[creator].push(layerIndex);
         layerIndex++;
         supplyInitialized = true;
@@ -220,7 +232,9 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     ) internal marketInitialized nonReentrant returns (bool) {
         require(
             _tokens > 0 &&
-                layers[_layerIndex].amountStakedByCurator[msg.sender] >= _tokens
+                layerIndexToStakes[_layerIndex][msg.sender] >= _tokens
+
+            // layers[_layerIndex].amountStakedByCurator[msg.sender] >= _tokens
         );
         require(_minETHReturned > 0);
         uint256 ethReturned = calculateSaleReturn(
@@ -235,7 +249,8 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         );
         poolBalance -= ethReturned;
         layers[_layerIndex].stakedTokens -= _tokens;
-        layers[_layerIndex].amountStakedByCurator[msg.sender] -= _tokens;
+        layerIndexToStakes[_layerIndex][msg.sender] -= _tokens;
+        //layers[_layerIndex].amountStakedByCurator[msg.sender] -= _tokens;
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
         sendValue(msg.sender, ethReturned);
@@ -265,11 +280,13 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
             msg.value,
             _minTokensToStake
         );
-        Layer storage newLayer = layers[layerIndex];
+        Layer memory newLayer;
         newLayer.URI = _contentURI;
         newLayer.layerCreator = msg.sender;
         newLayer.stakedTokens += tokensReturned;
-        newLayer.amountStakedByCurator[msg.sender] += tokensReturned;
+        layers[layerIndex] = newLayer;
+        layerIndexToStakes[layerIndex][msg.sender] += tokensReturned;
+        //newLayer.amountStakedByCurator[msg.sender] += tokensReturned;
         addressToLayerIndex[msg.sender].push(layerIndex);
         layerIndex++;
         emit LayerAdded(msg.sender, _contentURI, layerIndex, tokensReturned);
@@ -290,7 +307,8 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
             _minTokensToStake
         );
         layers[_layerIndex].stakedTokens += tokensReturned;
-        layers[_layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
+        layerIndexToStakes[_layerIndex][msg.sender] += tokensReturned;
+        //layers[_layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
         addressToLayerIndex[msg.sender].push(layerIndex);
         emit Staked(msg.sender, _layerIndex, tokensReturned);
         return true;
@@ -310,7 +328,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         );
         emit Removed(msg.sender, _layerIndex, _amountToRemove);
         // if stake is completely removed
-        if (layers[_layerIndex].amountStakedByCurator[msg.sender] == 0) {
+        if (layerIndexToStakes[_layerIndex][msg.sender] == 0) {
             // remove layer from user's portfolio
             if (addressToLayerIndex[msg.sender].length > 1) {
                 addressToLayerIndex[msg.sender][

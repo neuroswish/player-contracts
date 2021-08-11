@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-contract Power {
+contract PowerOptimized {
     uint256 private constant ONE = 1;
     uint32 private constant MAX_WEIGHT = 1000000;
     uint8 private constant MIN_PRECISION = 32;
