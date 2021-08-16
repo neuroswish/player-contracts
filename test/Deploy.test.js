@@ -4,7 +4,7 @@ const { ethers, waffle } = require('hardhat');
 const { provider } = waffle;
 const { expect }  = require('chai');
 const { deployTestContractSetup } = require("./helpers/deploy");
-const { FOUNDATIONAL_MEDIA_URI } = require('./helpers/constants');
+const { NAME, SYMBOL, FEE_PCT, PCT_BASE } = require('./helpers/constants');
 
 
 describe("Deploy new market via clone proxy from Market Factory", async () => {
@@ -16,21 +16,21 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     [signer, creator] = await ethers.getSigners();
 
     // deploy market contract
-    const contract = await(deployTestContractSetup(FOUNDATIONAL_MEDIA_URI, provider, creator));
+    const contract = await(deployTestContractSetup(NAME, SYMBOL, provider, creator));
     market = contract.market
   });
 
-  it('Market has been initialized with foundational layer', async() => {
-    const foundationURI = await market.foundationURI();
-    expect(foundationURI).to.equal(FOUNDATIONAL_MEDIA_URI);
+  it('Market has been initialized', async() => {
+    const name = await market.name();
+    const symbol = await market.symbol();
+    expect(name).to.equal(NAME);
+    expect(symbol).to.equal(SYMBOL);
   });
 
-
-  it('Market has been initialized by the foundational layer creator', async() => {
-    const foundationalLayerCreator = await market.getLayerCreator(0);
-    const marketCreator = await market.creator()
-    expect(foundationalLayerCreator).to.equal(marketCreator);
-  });
+  // it('Market has been initialized by the creator', async() => {
+  //   const marketCreator = await market.creator();
+  //   expect(marketCreator).to.equal(creator.address);
+  // });
 
   it('Pool balance is 0', async() => {
     const poolBalance = await market.poolBalance();
@@ -42,14 +42,30 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     expect(totalSupply).to.equal(0);
   });
 
-  it('Creator token balance is 0', async() => {
-    const marketCreator = await market.creator()
-    const creatorBalance = await market.totalBalance(marketCreator);
-    expect(creatorBalance).to.equal(0);
-  });
-
   it('Random account token balance is 0', async() => {
     const randomBalance = await market.totalBalance(signer.address);
     expect(randomBalance).to.equal(0);
+  });
+
+  it('Reserve ratio has been initialized', async() => {
+    const reserveRatio = await market.reserveRatio();
+    expect(reserveRatio).to.equal(333333);
+  });
+
+  it('ppm has been initialized', async() => {
+    const ppm = await market.ppm();
+    expect(ppm).to.equal(1000000);
+  });
+
+  it('Fee percentage has been initialized', async() => {
+    const initializedFeePct = await market.feePct();
+    const expectedFeePct = ethers.BigNumber.from(FEE_PCT);
+    expect(initializedFeePct.toString()).to.equal(expectedFeePct);
+  });
+
+  it('Percentage base has been initialized', async() => {
+    const initializedPctBase = await market.pctBase();
+    const expectedPctBase = ethers.BigNumber.from(PCT_BASE);
+    expect(initializedPctBase.toString()).to.equal(expectedPctBase.toString());
   });
 })

@@ -11,7 +11,7 @@ import {
   PopulatedTransaction,
   BaseContract,
   ContractTransaction,
-  PayableOverrides,
+  Overrides,
   CallOverrides,
 } from "ethers";
 import { BytesLike } from "@ethersproject/bytes";
@@ -19,32 +19,34 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface MarketFactoryInterface extends ethers.utils.Interface {
+interface BondingCurveInterface extends ethers.utils.Interface {
   functions: {
-    "createMarket(string,string)": FunctionFragment;
-    "logic()": FunctionFragment;
+    "calculateSaleReturn(uint256,uint256,uint32,uint256)": FunctionFragment;
+    "initMaxExpArray()": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "createMarket",
-    values: [string, string]
+    functionFragment: "calculateSaleReturn",
+    values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "logic", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "initMaxExpArray",
+    values?: undefined
+  ): string;
 
   decodeFunctionResult(
-    functionFragment: "createMarket",
+    functionFragment: "calculateSaleReturn",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "logic", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "initMaxExpArray",
+    data: BytesLike
+  ): Result;
 
-  events: {
-    "marketDeployed(address,address,string,string)": EventFragment;
-  };
-
-  getEvent(nameOrSignatureOrTopic: "marketDeployed"): EventFragment;
+  events: {};
 }
 
-export class MarketFactory extends BaseContract {
+export class BondingCurve extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -85,70 +87,73 @@ export class MarketFactory extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: MarketFactoryInterface;
+  interface: BondingCurveInterface;
 
   functions: {
-    createMarket(
-      _name: string,
-      _symbol: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+    calculateSaleReturn(
+      _supply: BigNumberish,
+      _poolBalance: BigNumberish,
+      _reserveRatio: BigNumberish,
+      _tokens: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
-    logic(overrides?: CallOverrides): Promise<[string]>;
+    initMaxExpArray(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
-  createMarket(
-    _name: string,
-    _symbol: string,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+  calculateSaleReturn(
+    _supply: BigNumberish,
+    _poolBalance: BigNumberish,
+    _reserveRatio: BigNumberish,
+    _tokens: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  initMaxExpArray(
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  logic(overrides?: CallOverrides): Promise<string>;
-
   callStatic: {
-    createMarket(
-      _name: string,
-      _symbol: string,
+    calculateSaleReturn(
+      _supply: BigNumberish,
+      _poolBalance: BigNumberish,
+      _reserveRatio: BigNumberish,
+      _tokens: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<string>;
-
-    logic(overrides?: CallOverrides): Promise<string>;
-  };
-
-  filters: {
-    marketDeployed(
-      contractAddress?: string | null,
-      creator?: string | null,
-      marketName?: null,
-      marketTokenSymbol?: null
-    ): TypedEventFilter<
-      [string, string, string, string],
-      {
-        contractAddress: string;
-        creator: string;
-        marketName: string;
-        marketTokenSymbol: string;
-      }
-    >;
-  };
-
-  estimateGas: {
-    createMarket(
-      _name: string,
-      _symbol: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    logic(overrides?: CallOverrides): Promise<BigNumber>;
+    initMaxExpArray(overrides?: CallOverrides): Promise<void>;
+  };
+
+  filters: {};
+
+  estimateGas: {
+    calculateSaleReturn(
+      _supply: BigNumberish,
+      _poolBalance: BigNumberish,
+      _reserveRatio: BigNumberish,
+      _tokens: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    initMaxExpArray(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    createMarket(
-      _name: string,
-      _symbol: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    calculateSaleReturn(
+      _supply: BigNumberish,
+      _poolBalance: BigNumberish,
+      _reserveRatio: BigNumberish,
+      _tokens: BigNumberish,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    logic(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    initMaxExpArray(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
   };
 }

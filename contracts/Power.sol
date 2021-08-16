@@ -22,39 +22,7 @@ contract Power {
 
     uint256[128] private maxExpArray;
 
-    constructor() {
-        //  maxExpArray[  0] = 0x6bffffffffffffffffffffffffffffffff;
-        //  maxExpArray[  1] = 0x67ffffffffffffffffffffffffffffffff;
-        //  maxExpArray[  2] = 0x637fffffffffffffffffffffffffffffff;
-        //  maxExpArray[  3] = 0x5f6fffffffffffffffffffffffffffffff;
-        //  maxExpArray[  4] = 0x5b77ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  5] = 0x57b3ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  6] = 0x5419ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  7] = 0x50a2ffffffffffffffffffffffffffffff;
-        //  maxExpArray[  8] = 0x4d517fffffffffffffffffffffffffffff;
-        //  maxExpArray[  9] = 0x4a233fffffffffffffffffffffffffffff;
-        //  maxExpArray[ 10] = 0x47165fffffffffffffffffffffffffffff;
-        //  maxExpArray[ 11] = 0x4429afffffffffffffffffffffffffffff;
-        //  maxExpArray[ 12] = 0x415bc7ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 13] = 0x3eab73ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 14] = 0x3c1771ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 15] = 0x399e96ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 16] = 0x373fc47fffffffffffffffffffffffffff;
-        //  maxExpArray[ 17] = 0x34f9e8ffffffffffffffffffffffffffff;
-        //  maxExpArray[ 18] = 0x32cbfd5fffffffffffffffffffffffffff;
-        //  maxExpArray[ 19] = 0x30b5057fffffffffffffffffffffffffff;
-        //  maxExpArray[ 20] = 0x2eb40f9fffffffffffffffffffffffffff;
-        //  maxExpArray[ 21] = 0x2cc8340fffffffffffffffffffffffffff;
-        //  maxExpArray[ 22] = 0x2af09481ffffffffffffffffffffffffff;
-        //  maxExpArray[ 23] = 0x292c5bddffffffffffffffffffffffffff;
-        //  maxExpArray[ 24] = 0x277abdcdffffffffffffffffffffffffff;
-        //  maxExpArray[ 25] = 0x25daf6657fffffffffffffffffffffffff;
-        //  maxExpArray[ 26] = 0x244c49c65fffffffffffffffffffffffff;
-        //  maxExpArray[ 27] = 0x22ce03cd5fffffffffffffffffffffffff;
-        //  maxExpArray[ 28] = 0x215f77c047ffffffffffffffffffffffff;
-        //  maxExpArray[ 29] = 0x1fffffffffffffffffffffffffffffffff;
-        //  maxExpArray[ 30] = 0x1eaefdbdabffffffffffffffffffffffff;
-        //  maxExpArray[ 31] = 0x1d6bd8b2ebffffffffffffffffffffffff;
+    function initMaxExpArray() public {
         maxExpArray[32] = 0x1c35fedd14ffffffffffffffffffffffff;
         maxExpArray[33] = 0x1b0ce43b323fffffffffffffffffffffff;
         maxExpArray[34] = 0x19f0028ec1ffffffffffffffffffffffff;
@@ -153,6 +121,10 @@ contract Power {
         maxExpArray[127] = 0x00857ddf0117efa215952912839f6473e6;
     }
 
+    function init() internal {
+        initMaxExpArray();
+    }
+
     /**
      * @dev General Description:
      *     Determine a value of precision.
@@ -182,6 +154,31 @@ contract Power {
 
         uint256 baseLog;
         uint256 base = (_baseN * FIXED_1) / _baseD;
+        baseLog = generalLog(base);
+
+        uint256 baseLogTimesExp = (baseLog * _expN) / _expD;
+        uint8 precision = findPositionInMaxExpArray(baseLogTimesExp);
+        return (
+            generalExp(
+                baseLogTimesExp >> (MAX_PRECISION - precision),
+                precision
+            ),
+            precision
+        );
+    }
+
+    function powerInitial(
+        uint256 _baseN,
+        uint256 _baseDNumerator,
+        uint256 _baseDDenominator,
+        uint32 _expN,
+        uint32 _expD
+    ) internal view returns (uint256, uint8) {
+        require(_baseN < MAX_NUM);
+
+        uint256 baseLog;
+        uint256 base = (_baseN * _baseDDenominator * FIXED_1) /
+            (_baseDNumerator);
         baseLog = generalLog(base);
 
         uint256 baseLogTimesExp = (baseLog * _expN) / _expD;

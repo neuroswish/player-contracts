@@ -5,21 +5,6 @@ async function deploy(name, args = []) {
   return contract.deployed();
 }
 
-// DEPLOY MARKET LOGIC
-async function deployMarket(
-  reserveRatio,
-  slopeN,
-  slopeD,
-  feePct
-) {
-  return deploy('Market', [
-    reserveRatio,
-    slopeN,
-    slopeD,
-    feePct
-  ]);
-}
-
 // GET MARKET CONTRACT FROM MARKET FACTORY EVENT LOGS
 async function getMarketContractFromEventLogs(
   provider,
@@ -36,7 +21,7 @@ async function getMarketContractFromEventLogs(
   // extract market clone address from marketDeployed log
   const marketCloneAddress = events[0]['args'][0];
 
-  // instantiate ethers contract with Market Logic interface + market proxy address
+  // create new instance of contract with Market Logic interface + market proxy address
   const Market = await ethers.getContractFactory('Market');
   const market = new ethers.Contract(
     marketCloneAddress,
@@ -47,7 +32,8 @@ async function getMarketContractFromEventLogs(
 }
 
 async function deployTestContractSetup(
-  foundationalMediaURI,
+  name,
+  symbol,
   provider,
   signer,
 ) {
@@ -55,15 +41,10 @@ async function deployTestContractSetup(
   // DEPLOY MARKET FACTORY
   const MarketFactory = await deploy('MarketFactory');
 
-  // DEPLOY MARKET CLONE
-  await MarketFactory.createMarket(foundationalMediaURI);
-
-  // Get market ethers contract
-  const market = await getMarketContractFromEventLogs(
-    provider,
-    MarketFactory,
-    signer,
-  );
+  //create new factory instance
+  const factory = new ethers.Contract(MarketFactory.address, MarketFactory.interface, signer);
+  await factory.createMarket(name, symbol);
+  const market = await getMarketContractFromEventLogs(provider, factory, signer);
 
   return {
     market
@@ -72,9 +53,7 @@ async function deployTestContractSetup(
 
 
 module.exports = {
-deployMarket,
 deployTestContractSetup,
 getMarketContractFromEventLogs,
-deploy
 };
 

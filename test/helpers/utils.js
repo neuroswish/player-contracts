@@ -1,4 +1,5 @@
 const { expect } = require('chai');
+const { ethers } = require('ethers');
 const { FOURTY_EIGHT_HOURS_IN_SECONDS, MARKET_NAMES } = require('./constants');
 
 function eth(num) {
@@ -111,12 +112,13 @@ async function contribute(partyBidContract, contributorSigner, value) {
   });
 }
 
-async function initializeSupply(marketContract, signer, value) {
-  const data = encodeData(marketContract, "initializeSupply", [value]);
+async function initializeSupply(marketContract, signer, eth) {
+  const data = encodeData(marketContract, "initializeSupply", [eth]);
 
   return signer.sendTransaction({
     to: marketContract.address,
-    data,
+    data: data,
+    value: ethers.utils.parseEther(eth.toString())
   });
 }
 

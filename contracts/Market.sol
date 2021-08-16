@@ -14,77 +14,43 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     // ======== Continuous token params ========
-    bool public supplyInitialized;
+    string public name; // market name
+    string public symbol; // market token symbol
     uint256 public totalSupply; // total supply of tokens in circulation
-    uint32 public reserveRatio = 333333; // reserve ratio in ppm
-    uint32 public ppm = 1000000; // ppm units
-    uint256 public slopeN = 1; // slope numerator value for initial token return computation
-    uint256 public slopeD = 100000; // slope denominator value for initial token return computation
+    uint32 public reserveRatio; // reserve ratio in ppm
+    uint32 public ppm; // ppm units
     uint256 public poolBalance; // ETH balance in contract pool
-    uint256 public feePct = 10**17; // 10**17
-    uint256 public pctBase = 10**18;
+    uint256 public feePct; // percentage fee of buy amount distributed to beneficiaries (10**17)
+    uint256 public pctBase; // 10**18
 
     // ======== Player params ========
-    address payable public creator;
-    uint256 creatorReward;
-    address[] beneficiaries;
-    mapping(address => uint256) public beneficiaryIndex;
-    mapping(address => bool) public addressIsBeneficiary;
-    mapping(address => uint256) public beneficiaryRewards;
+    address[] public curators; // addresses of active curators
+    mapping(address => uint256) public rewards; // mapping from curator to their proportional reward amount for curating
     mapping(address => uint256) public totalBalance; // mapping of an address to that user's total token balance for this contract
+    mapping(address => bool) public isCurating; // mapping of an address to bool representing whether address is currently staking
+    mapping(address => mapping(uint256 => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is staking a layer
 
     // ======== Layer params ========
-    string public foundationURI; // URI of foundational layer
     struct Layer {
-        address layerCreator; // layer creator
+        address creator; // layer creator
         string URI; // layer content URI
-        uint256 stakedTokens; // total amount of tokens staked in layer
-        //mapping(address => uint256) amountStakedByCurator; // mapping from a curator to the amount of tokens the curator has staked
+        address[] curators; // addresses curating this layer
     }
     Layer[] public layers; // array of all layers
-    mapping(address => uint256[]) public addressToLayerIndex; // mapping from a curator address to layer index staked by that address
+    mapping(address => uint256[]) public addressToCuratedLayerIndex; // mapping from a curator address to layer index staked by that address
+    mapping(address => uint256[]) public addressToCreatedLayerIndex; // mapping from a curator address to layer index staked by that address
     uint256 layerIndex = 0; // initialize layerIndex (foundational layer will have an index of 0)
-    mapping(uint256 => mapping(address => uint256)) layerIndexToStakes;
-
-    function getLayerCreator(uint256 _layerIndex)
-        public
-        view
-        returns (address)
-    {
-        Layer memory matchingLayer = layers[_layerIndex];
-        return (matchingLayer.layerCreator);
-    }
 
     // ======== Events ========
-    event FoundationLayerAdded(
+    event LayerAdded(
         address indexed creator,
-        string foundationURI,
+        string contentURI,
         uint256 layerIndex
     );
-    event LayerAdded(
-        address indexed layerCreator,
-        string contentURI,
-        uint256 layerIndex,
-        uint256 tokensStaked
-    );
-    event Staked(
-        address indexed curator,
-        uint256 layerIndex,
-        uint256 tokensStaked
-    );
-    event Removed(
-        address indexed curator,
-        uint256 layerIndex,
-        uint256 tokensRemoved
-    );
-    event CreatorClaimed(address indexed creator);
-    event BeneficiaryClaimed(address indexed beneficiary);
-    event InitialSupplyCreated(
-        address indexed buyer,
-        uint256 poolBalance,
-        uint256 totalSupply,
-        uint256 price
-    );
+    event Curated(address indexed curator, uint256 layerIndex);
+    event Removed(address indexed curator, uint256 layerIndex);
+    event RewardsAdded(uint256 totalRewardAmount);
+    event RewardClaimed(address indexed beneficiary);
     event Buy(
         address indexed buyer,
         uint256 poolBalance,
@@ -92,9 +58,6 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         uint256 tokens,
         uint256 price
     );
-
-    event RewardsAdded(uint256 totalRewardAmount);
-
     event Sell(
         address indexed seller,
         uint256 poolBalance,
@@ -104,265 +67,186 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     );
 
     // ======== Modifiers ========
-    modifier marketInitialized() {
-        require(supplyInitialized);
+    modifier holder(address user) {
+        require(totalBalance[user] > 0);
         _;
     }
 
-    // ======== Constructor ========
-    // constructor(
-    //     uint32 _reserveRatio,
-    //     uint256 _slopeN,
-    //     uint256 _slopeD,
-    //     uint256 _feePct
-    // ) {
-    //     reserveRatio = _reserveRatio;
-    //     slopeN = _slopeN;
-    //     slopeD = _slopeD;
-    //     feePct = _feePct;
-    // }
-
     // ======== Initializer for new market proxy ========
-    function initialize(address _creator, string calldata _foundationURI)
+    function initialize(string calldata _name, string calldata _symbol)
         public
         payable
         initializer
     {
-        creator = payable(_creator);
-        foundationURI = _foundationURI;
-        Layer memory foundationalLayer;
-        foundationalLayer.URI = _foundationURI;
-        foundationalLayer.layerCreator = creator;
-        layers.push(foundationalLayer);
-        emit FoundationLayerAdded(creator, _foundationURI, layerIndex);
+        reserveRatio = 333333;
+        ppm = 1000000;
+        feePct = 10**17;
+        pctBase = 10**18;
+        name = _name;
+        symbol = _symbol;
         __ReentrancyGuard_init();
     }
 
-    // ======== Functions ========
-    function initializeSupply(uint256 _eth) public payable {
-        require(msg.sender == creator);
-        require(_eth == msg.value);
-        uint256 tokensReturned;
-        uint256 slope = (slopeN / slopeD);
-        tokensReturned = calculateInitializationReturn(
-            msg.value,
-            reserveRatio,
-            slope
-        );
-        totalSupply += tokensReturned;
-        totalBalance[creator] += tokensReturned;
-        poolBalance += _eth;
-        emit InitialSupplyCreated(creator, poolBalance, totalSupply, msg.value);
-        layers[layerIndex].stakedTokens += tokensReturned;
-        layerIndexToStakes[layerIndex][creator] += tokensReturned;
-        //layers[layerIndex].amountStakedByCurator[creator] += tokensReturned;
-        addressToLayerIndex[creator].push(layerIndex);
-        layerIndex++;
-        supplyInitialized = true;
-    }
-
-    function buy(
-        uint256 _totalSupply,
-        uint256 _poolBalance,
-        uint256 _price,
-        uint256 _minTokensReturned
-    ) internal marketInitialized returns (bool, uint256) {
+    function buy(uint256 _price, uint256 _minTokensReturned)
+        public
+        payable
+        returns (bool)
+    {
         require(msg.value == _price && msg.value > 0);
         require(_minTokensReturned > 0);
-        // calculate creator and beneficiary fees
+        // calculate beneficiary fees
         uint256 value = _price;
         uint256 reward = (_price * feePct) / pctBase;
         value -= reward;
         // calculate tokens returned
         uint256 tokensReturned;
-        if (_totalSupply == 0) {
-            uint256 slope = (slopeN / slopeD);
-            tokensReturned = calculateInitializationReturn(
-                value,
-                reserveRatio,
-                slope
-            );
-            require(
-                tokensReturned >= _minTokensReturned,
-                "quantity of tokens returned falls outside slippage tolerance"
-            );
-        } else {
+        if (totalSupply == 0) {
             tokensReturned = calculatePurchaseReturn(
-                _totalSupply,
-                _poolBalance,
+                0,
+                poolBalance,
                 reserveRatio,
                 value
             );
-            require(
-                tokensReturned >= _minTokensReturned,
-                "quantity of tokens returned falls outside slippage tolerance"
+            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
+        } else {
+            tokensReturned = calculatePurchaseReturn(
+                totalSupply,
+                poolBalance,
+                reserveRatio,
+                value
             );
+            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
         }
         totalSupply += tokensReturned;
         totalBalance[msg.sender] += tokensReturned;
-        if (!addressIsBeneficiary[msg.sender]) {
-            addressIsBeneficiary[msg.sender] = true;
-            beneficiaries.push(msg.sender);
-        }
         poolBalance += value;
         emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, value);
         calculateRewards(reward);
-        return (true, tokensReturned);
+        return true;
     }
 
     function calculateRewards(uint256 _totalRewardAmount) internal {
-        uint256 buyCreatorReward = _totalRewardAmount / 2;
-        creatorReward += buyCreatorReward;
-        uint256 totalBeneficiaryReward = buyCreatorReward;
-        for (uint256 i; i < beneficiaries.length; i++) {
-            address beneficiary = beneficiaries[i];
-            uint256 reward = totalBeneficiaryReward *
+        for (uint256 i; i < curators.length; i++) {
+            address beneficiary = curators[i];
+            uint256 reward = _totalRewardAmount *
                 (totalBalance[beneficiary] / totalSupply);
-            beneficiaryRewards[beneficiary] += reward;
+            rewards[beneficiary] += reward;
         }
         emit RewardsAdded(_totalRewardAmount);
     }
 
-    function sell(
-        uint256 _totalSupply,
-        uint256 _poolBalance,
-        uint256 _tokens,
-        uint256 _minETHReturned,
-        uint256 _layerIndex
-    ) internal marketInitialized nonReentrant returns (bool) {
+    function sell(uint256 _tokens, uint256 _minETHReturned)
+        public
+        holder(msg.sender)
+        nonReentrant
+        returns (bool)
+    {
         require(
             _tokens > 0 &&
-                layerIndexToStakes[_layerIndex][msg.sender] >= _tokens
-
-            // layers[_layerIndex].amountStakedByCurator[msg.sender] >= _tokens
+                poolBalance > 0 &&
+                _tokens <= totalBalance[msg.sender]
         );
         require(_minETHReturned > 0);
         uint256 ethReturned = calculateSaleReturn(
-            _totalSupply,
-            _poolBalance,
+            totalSupply,
+            poolBalance,
             reserveRatio,
             _tokens
         );
-        require(
-            ethReturned >= _minETHReturned,
-            "quantity of ETH returned falls outside slippage tolerance"
-        );
+        require(ethReturned >= _minETHReturned, "SLIPPAGE");
         poolBalance -= ethReturned;
-        layers[_layerIndex].stakedTokens -= _tokens;
-        layerIndexToStakes[_layerIndex][msg.sender] -= _tokens;
-        //layers[_layerIndex].amountStakedByCurator[msg.sender] -= _tokens;
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
         sendValue(msg.sender, ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
         if (totalBalance[msg.sender] == 0) {
-            addressIsBeneficiary[msg.sender] = false;
-            for (uint256 i; i < beneficiaries.length; i++) {
-                if (beneficiaries[i] == msg.sender) {
-                    beneficiaries[i] = beneficiaries[beneficiaries.length - 1];
-                    beneficiaries.pop();
+            for (uint256 i; i < curators.length; i++) {
+                if (curators[i] == msg.sender) {
+                    curators[i] = curators[curators.length - 1];
+                    curators.pop();
                 }
             }
         }
         return true;
     }
 
-    function addLayer(string memory _contentURI, uint256 _minTokensToStake)
+    function addLayer(string memory _URI)
         public
-        payable
-        marketInitialized
+        holder(msg.sender)
         returns (bool)
     {
-        uint256 tokensReturned;
-        (, tokensReturned) = buy(
-            totalSupply,
-            poolBalance,
-            msg.value,
-            _minTokensToStake
-        );
-        Layer memory newLayer;
-        newLayer.URI = _contentURI;
-        newLayer.layerCreator = msg.sender;
-        newLayer.stakedTokens += tokensReturned;
-        layers[layerIndex] = newLayer;
-        layerIndexToStakes[layerIndex][msg.sender] += tokensReturned;
-        //newLayer.amountStakedByCurator[msg.sender] += tokensReturned;
-        addressToLayerIndex[msg.sender].push(layerIndex);
+        Layer memory layer;
+        layer.URI = _URI;
+        layer.creator = msg.sender;
+        layers[layerIndex] = layer;
+        addressToCreatedLayerIndex[msg.sender].push(layerIndex);
         layerIndex++;
-        emit LayerAdded(msg.sender, _contentURI, layerIndex, tokensReturned);
+        emit LayerAdded(msg.sender, _URI, layerIndex);
         return true;
     }
 
-    function addStake(uint256 _layerIndex, uint256 _minTokensToStake)
+    function curate(uint256 _layerIndex)
         public
-        payable
-        marketInitialized
+        holder(msg.sender)
         returns (bool)
     {
-        uint256 tokensReturned;
-        (, tokensReturned) = buy(
-            totalSupply,
-            poolBalance,
-            msg.value,
-            _minTokensToStake
-        );
-        layers[_layerIndex].stakedTokens += tokensReturned;
-        layerIndexToStakes[_layerIndex][msg.sender] += tokensReturned;
-        //layers[_layerIndex].amountStakedByCurator[msg.sender] += tokensReturned;
-        addressToLayerIndex[msg.sender].push(layerIndex);
-        emit Staked(msg.sender, _layerIndex, tokensReturned);
-        return true;
-    }
-
-    function removeStake(
-        uint256 _layerIndex,
-        uint256 _amountToRemove,
-        uint256 _minETHReturned
-    ) internal marketInitialized returns (bool) {
-        sell(
-            totalSupply,
-            poolBalance,
-            _amountToRemove,
-            _minETHReturned,
-            _layerIndex
-        );
-        emit Removed(msg.sender, _layerIndex, _amountToRemove);
-        // if stake is completely removed
-        if (layerIndexToStakes[_layerIndex][msg.sender] == 0) {
-            // remove layer from user's portfolio
-            if (addressToLayerIndex[msg.sender].length > 1) {
-                addressToLayerIndex[msg.sender][
-                    _layerIndex
-                ] = addressToLayerIndex[msg.sender][
-                    addressToLayerIndex[msg.sender].length - 1
-                ];
+        if (isCuratingLayer[msg.sender][_layerIndex]) {
+            revert("already staked");
+        } else {
+            addressToCuratedLayerIndex[msg.sender].push(_layerIndex);
+            if (!isCurating[msg.sender]) {
+                isCurating[msg.sender] = true;
+                curators.push(msg.sender);
             }
-            addressToLayerIndex[msg.sender].pop();
+            emit Curated(msg.sender, _layerIndex);
+            return true;
         }
+    }
+
+    function removeCuration(uint256 _layerIndex)
+        public
+        holder(msg.sender)
+        returns (bool)
+    {
+        if (!isCuratingLayer[msg.sender][_layerIndex]) {
+            revert("no stake");
+        }
+        for (
+            uint256 i;
+            i < addressToCuratedLayerIndex[msg.sender].length;
+            i++
+        ) {
+            if (addressToCuratedLayerIndex[msg.sender][i] == _layerIndex) {
+                addressToCuratedLayerIndex[msg.sender][
+                    i
+                ] = addressToCuratedLayerIndex[msg.sender][
+                    addressToCuratedLayerIndex[msg.sender].length - 1
+                ];
+                addressToCuratedLayerIndex[msg.sender].pop();
+            }
+        }
+        if (addressToCuratedLayerIndex[msg.sender].length == 0) {
+            isCurating[msg.sender] = false;
+            for (uint256 i; i < curators.length; i++) {
+                if (curators[i] == msg.sender) {
+                    curators[i] = curators[curators.length - 1];
+                    curators.pop();
+                }
+            }
+        }
+        emit Removed(msg.sender, _layerIndex);
         return true;
     }
 
-    function claimBeneficiaryReward(address _beneficiary)
+    function claimReward(address _beneficiary)
         public
-        marketInitialized
         nonReentrant
         returns (bool)
     {
-        require(addressIsBeneficiary[_beneficiary]);
-        sendValue(_beneficiary, beneficiaryRewards[_beneficiary]);
-        emit BeneficiaryClaimed(_beneficiary);
-        return true;
-    }
-
-    function claimCreatorReward(address _creator)
-        public
-        marketInitialized
-        nonReentrant
-        returns (bool)
-    {
-        require(creator == _creator);
-        sendValue(_creator, creatorReward);
-        emit CreatorClaimed(_creator);
+        require(rewards[_beneficiary] > 0, "no rewards to claim");
+        sendValue(_beneficiary, rewards[_beneficiary]);
+        rewards[_beneficiary] = 0;
+        emit RewardClaimed(_beneficiary);
         return true;
     }
 

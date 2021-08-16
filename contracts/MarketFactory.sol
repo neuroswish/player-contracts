@@ -20,23 +20,23 @@ contract MarketFactory {
     event marketDeployed(
         address indexed contractAddress,
         address indexed creator,
-        string foundationURI
+        string marketName,
+        string marketTokenSymbol
     );
 
     // ======== Constructor ========
     constructor() {
-        // logic = address(new Market(333333, 1, 100000, 10**17));
         logic = address(new Market());
     }
 
     // ======== Deploy contract ========
-    function createMarket(string calldata _foundationLayerURI)
+    function createMarket(string calldata _name, string calldata _symbol)
         external
         payable
         returns (address market)
     {
         market = Clones.clone(logic);
-        Market(market).initialize(msg.sender, _foundationLayerURI);
-        emit marketDeployed(market, msg.sender, _foundationLayerURI);
+        Market(market).initialize(_name, _symbol);
+        emit marketDeployed(market, msg.sender, _name, _symbol);
     }
 }

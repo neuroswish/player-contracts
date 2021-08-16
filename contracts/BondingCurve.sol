@@ -2,9 +2,11 @@
 pragma solidity ^0.8.4;
 
 import "./Power.sol";
+import "./libraries/YieldMath.sol";
 
 contract BondingCurve is Power {
     uint32 private constant maxRatio = 1000000;
+    uint256 private constant slopeFactor = 100000;
 
     /**
      * @dev given a token supply, reserve balance, weight and a deposit amount (in the reserve token),
@@ -20,36 +22,33 @@ contract BondingCurve is Power {
      *
      * @return target
      */
+
     function calculatePurchaseReturn(
         uint256 _supply,
         uint256 _poolBalance,
         uint32 _reserveRatio,
         uint256 _price
-    ) public view returns (uint256) {
-        // validate input
-        require(_supply > 0, "INVALID SUPPLY");
-        require(_poolBalance > 0, "INVALID POOL BALANCE");
-        require(_reserveRatio > 0 && _reserveRatio <= maxRatio);
-
-        // edge case for 0 price amount
-        if (_price == 0) {
-            return 0;
+    ) internal returns (uint256) {
+        // initialize supply if supply = 0
+        if (_supply == 0 || _poolBalance == 0) {
+            init();
+            (uint256 temp, uint256 precision) = powerInitial(
+                (_price * slopeFactor),
+                _reserveRatio,
+                maxRatio,
+                _reserveRatio,
+                maxRatio
+            );
+            return (temp >> precision);
+        } else {
+            (uint256 result, uint8 precision) = power(
+                (_price + _poolBalance),
+                _poolBalance,
+                _reserveRatio,
+                maxRatio
+            );
+            return (((_supply * result) >> precision) - _supply);
         }
-
-        // edge case for reserve ratio = 100%
-        if (_reserveRatio == maxRatio) {
-            return (_supply * _price) / _poolBalance;
-        }
-
-        uint256 baseN = _price + _poolBalance;
-        (uint256 result, uint8 precision) = power(
-            baseN,
-            _poolBalance,
-            _reserveRatio,
-            maxRatio
-        );
-        uint256 temp = (_supply * result) >> precision;
-        return (temp - _supply);
     }
 
     /**
@@ -73,75 +72,16 @@ contract BondingCurve is Power {
         uint32 _reserveRatio,
         uint256 _tokens
     ) public view returns (uint256) {
-        // validate input
-        require(_supply > 0, "INVALID SUPPLY");
-        require(_poolBalance > 0, "INVALID SUPPLY");
-        require(
-            _reserveRatio > 0 && _reserveRatio <= maxRatio,
-            "INVALID RESERVE RATIO"
-        );
-        require(_tokens <= _supply, "INVALID TOKEN AMOUNT");
-
-        // edge case for 0 sell amount
-        if (_tokens == 0) {
-            return 0;
-        }
-
         // edge case for selling entire supply
         if (_tokens == _supply) {
             return _poolBalance;
         }
-
-        // edge case if reserve ratio = 100%
-        if (_reserveRatio == maxRatio) {
-            return (_reserveRatio * _tokens) / _supply;
-        }
-
         (uint256 result, uint8 precision) = power(
             _supply,
             (_supply - _tokens),
             maxRatio,
             _reserveRatio
         );
-        uint256 quant1 = _poolBalance * result;
-        uint256 quant2 = _poolBalance << precision;
-        return (quant1 - quant2) / result;
-    }
-
-    /**
-     * @dev given a price, reserve ratio, and slope value,
-     * calculates the token return when initializing the bonding curve supply
-     *
-     * Formula:
-     * return = (_price / (_reserveRatio * _slope)) ** _reserveRatio
-     *
-     * @param _price          liquid token supply
-     * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)
-     * @param _slope          amount of liquid tokens to get the target amount for
-     *
-     * @return initial token amount
-     */
-
-    function calculateInitializationReturn(
-        uint256 _price,
-        uint32 _reserveRatio,
-        uint256 _slope
-    ) public view returns (uint256) {
-        require(_reserveRatio > 0 && _reserveRatio <= maxRatio);
-        if (_price == 0) {
-            return 0;
-        }
-
-        if (_reserveRatio == maxRatio) {
-            return (_price / _slope);
-        }
-        (uint256 temp, uint256 precision) = power(
-            _price,
-            (_reserveRatio * _slope),
-            _reserveRatio,
-            maxRatio
-        );
-        uint256 result = temp >> precision;
-        return result;
+        return ((_poolBalance * result) - (_poolBalance << precision)) / result;
     }
 }
