@@ -19,14 +19,11 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface BondingCurveInterface extends ethers.utils.Interface {
+interface IBondingCurveInterface extends ethers.utils.Interface {
   functions: {
     "calculateInitializationReturn(uint256,uint32)": FunctionFragment;
     "calculatePurchaseReturn(uint256,uint256,uint32,uint256)": FunctionFragment;
     "calculateSaleReturn(uint256,uint256,uint32,uint256)": FunctionFragment;
-    "initMaxExpArray()": FunctionFragment;
-    "maxRatio()": FunctionFragment;
-    "slopeFactor()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -41,15 +38,6 @@ interface BondingCurveInterface extends ethers.utils.Interface {
     functionFragment: "calculateSaleReturn",
     values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "initMaxExpArray",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "maxRatio", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "slopeFactor",
-    values?: undefined
-  ): string;
 
   decodeFunctionResult(
     functionFragment: "calculateInitializationReturn",
@@ -63,20 +51,11 @@ interface BondingCurveInterface extends ethers.utils.Interface {
     functionFragment: "calculateSaleReturn",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "initMaxExpArray",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "maxRatio", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "slopeFactor",
-    data: BytesLike
-  ): Result;
 
   events: {};
 }
 
-export class BondingCurve extends BaseContract {
+export class IBondingCurve extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -117,69 +96,53 @@ export class BondingCurve extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: BondingCurveInterface;
+  interface: IBondingCurveInterface;
 
   functions: {
     calculateInitializationReturn(
       _price: BigNumberish,
       _reserveRatio: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     calculatePurchaseReturn(
       _supply: BigNumberish,
       _poolBalance: BigNumberish,
       _reserveRatio: BigNumberish,
       _price: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
 
     calculateSaleReturn(
       _supply: BigNumberish,
       _poolBalance: BigNumberish,
       _reserveRatio: BigNumberish,
       _tokens: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    initMaxExpArray(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    maxRatio(overrides?: CallOverrides): Promise<[number]>;
-
-    slopeFactor(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
   calculateInitializationReturn(
     _price: BigNumberish,
     _reserveRatio: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   calculatePurchaseReturn(
     _supply: BigNumberish,
     _poolBalance: BigNumberish,
     _reserveRatio: BigNumberish,
     _price: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   calculateSaleReturn(
     _supply: BigNumberish,
     _poolBalance: BigNumberish,
     _reserveRatio: BigNumberish,
     _tokens: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
-  initMaxExpArray(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  maxRatio(overrides?: CallOverrides): Promise<number>;
-
-  slopeFactor(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
     calculateInitializationReturn(
@@ -203,12 +166,6 @@ export class BondingCurve extends BaseContract {
       _tokens: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    initMaxExpArray(overrides?: CallOverrides): Promise<void>;
-
-    maxRatio(overrides?: CallOverrides): Promise<number>;
-
-    slopeFactor(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {};
@@ -217,7 +174,7 @@ export class BondingCurve extends BaseContract {
     calculateInitializationReturn(
       _price: BigNumberish,
       _reserveRatio: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     calculatePurchaseReturn(
@@ -225,7 +182,7 @@ export class BondingCurve extends BaseContract {
       _poolBalance: BigNumberish,
       _reserveRatio: BigNumberish,
       _price: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     calculateSaleReturn(
@@ -233,23 +190,15 @@ export class BondingCurve extends BaseContract {
       _poolBalance: BigNumberish,
       _reserveRatio: BigNumberish,
       _tokens: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    initMaxExpArray(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    maxRatio(overrides?: CallOverrides): Promise<BigNumber>;
-
-    slopeFactor(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
     calculateInitializationReturn(
       _price: BigNumberish,
       _reserveRatio: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     calculatePurchaseReturn(
@@ -257,7 +206,7 @@ export class BondingCurve extends BaseContract {
       _poolBalance: BigNumberish,
       _reserveRatio: BigNumberish,
       _price: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     calculateSaleReturn(
@@ -265,15 +214,7 @@ export class BondingCurve extends BaseContract {
       _poolBalance: BigNumberish,
       _reserveRatio: BigNumberish,
       _tokens: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    initMaxExpArray(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
-
-    maxRatio(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    slopeFactor(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

@@ -39,7 +39,8 @@ async function deployTestContractSetup(
 ) {
   
   // DEPLOY MARKET FACTORY
-  const MarketFactory = await deploy('MarketFactory');
+  const bondingCurve = await deploy('BondingCurve');
+  const MarketFactory = await deploy('MarketFactory', [bondingCurve.address]);
 
   //create new factory instance
   const factory = new ethers.Contract(MarketFactory.address, MarketFactory.interface, signer);

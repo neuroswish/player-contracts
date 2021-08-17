@@ -2,11 +2,10 @@
 pragma solidity ^0.8.4;
 
 import "./Power.sol";
-import "./libraries/YieldMath.sol";
 
 contract BondingCurve is Power {
-    uint32 private constant maxRatio = 1000000;
-    uint256 private constant slopeFactor = 100000;
+    uint32 public constant maxRatio = 1000000;
+    uint256 public constant slopeFactor = 100000;
 
     /**
      * @dev given a token supply, reserve balance, weight and a deposit amount (in the reserve token),
@@ -22,33 +21,24 @@ contract BondingCurve is Power {
      *
      * @return target
      */
-
     function calculatePurchaseReturn(
         uint256 _supply,
         uint256 _poolBalance,
         uint32 _reserveRatio,
         uint256 _price
-    ) internal returns (uint256) {
-        // initialize supply if supply = 0
-        if (_supply == 0 || _poolBalance == 0) {
-            init();
-            (uint256 temp, uint256 precision) = powerInitial(
-                (_price * slopeFactor),
-                _reserveRatio,
-                maxRatio,
-                _reserveRatio,
-                maxRatio
-            );
-            return (temp >> precision);
-        } else {
-            (uint256 result, uint8 precision) = power(
-                (_price + _poolBalance),
-                _poolBalance,
-                _reserveRatio,
-                maxRatio
-            );
-            return (((_supply * result) >> precision) - _supply);
-        }
+    ) public view returns (uint256) {
+        // validate input
+        require(_supply > 0, "INVALID SUPPLY");
+        require(_poolBalance > 0, "INVALID POOL BALANCE");
+        // calculate result
+        (uint256 result, uint8 precision) = power(
+            (_price + _poolBalance),
+            _poolBalance,
+            _reserveRatio,
+            maxRatio
+        );
+        uint256 temp = (_supply * result) >> precision;
+        return (temp - _supply);
     }
 
     /**
@@ -72,10 +62,15 @@ contract BondingCurve is Power {
         uint32 _reserveRatio,
         uint256 _tokens
     ) public view returns (uint256) {
+        // validate input
+        require(_supply > 0, "INVALID SUPPLY");
+        require(_poolBalance > 0, "INVALID SUPPLY");
+
         // edge case for selling entire supply
         if (_tokens == _supply) {
             return _poolBalance;
         }
+
         (uint256 result, uint8 precision) = power(
             _supply,
             (_supply - _tokens),
@@ -83,5 +78,36 @@ contract BondingCurve is Power {
             _reserveRatio
         );
         return ((_poolBalance * result) - (_poolBalance << precision)) / result;
+    }
+
+    /**
+     * @dev given a price, reserve ratio, and slope value,
+     * calculates the token return when initializing the bonding curve supply
+     *
+     * Formula:
+     * return = (_price / (_reserveRatio * _slope)) ** _reserveRatio
+     *
+     * @param _price          liquid token supply
+     * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)
+     *
+     * @return initial token amount
+     */
+
+    function calculateInitializationReturn(uint256 _price, uint32 _reserveRatio)
+        public
+        returns (uint256)
+    {
+        if (_reserveRatio == maxRatio) {
+            return (_price * slopeFactor);
+        }
+        init();
+        (uint256 temp, uint256 precision) = powerInitial(
+            (_price * slopeFactor),
+            _reserveRatio,
+            maxRatio,
+            _reserveRatio,
+            maxRatio
+        );
+        return (temp >> precision);
     }
 }

@@ -29,8 +29,8 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     expect(symbol).to.equal(SYMBOL);
   });
 
-  it('Uses 230540 gas', async() => {
-    expect(deploymentGas.toString()).to.eq("230540");
+  it('Uses 253153 gas', async() => {
+    expect(deploymentGas.toString()).to.eq("253153");
   });
 
   it('Pool balance is 0', async() => {
@@ -70,8 +70,8 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     expect(initializedPctBase.toString()).to.equal(expectedPctBase.toString());
   });
 
-   // it('Market has been initialized by the creator', async() => {
-  //   const marketCreator = await market.creator();
-  //   expect(marketCreator).to.equal(creator.address);
-  // });
+   it('Market has been initialized with bonding curve contract address', async() => {
+    const bondingCurveAddress = await market.bondingCurve();
+    console.log(bondingCurveAddress);
+  });
 })

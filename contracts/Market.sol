@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 import "./BondingCurve.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "./interfaces/IBondingCurve.sol";
 
 /**
  * @title Market
@@ -12,7 +13,9 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
  * "All of you Mario, it's all a game"
  */
 
-contract Market is BondingCurve, ReentrancyGuardUpgradeable {
+contract Market is ReentrancyGuardUpgradeable {
+    // ======== Continuous token params ========
+    address public bondingCurve;
     // ======== Continuous token params ========
     string public name; // market name
     string public symbol; // market token symbol
@@ -68,22 +71,23 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
 
     // ======== Modifiers ========
     modifier holder(address user) {
-        require(totalBalance[user] > 0);
+        require(totalBalance[user] > 0, "MUST HOLD TOKENS");
         _;
     }
 
     // ======== Initializer for new market proxy ========
-    function initialize(string calldata _name, string calldata _symbol)
-        public
-        payable
-        initializer
-    {
+    function initialize(
+        string calldata _name,
+        string calldata _symbol,
+        address _bondingCurve
+    ) public payable initializer {
         reserveRatio = 333333;
         ppm = 1000000;
         feePct = 10**17;
         pctBase = 10**18;
         name = _name;
         symbol = _symbol;
+        bondingCurve = _bondingCurve;
         __ReentrancyGuard_init();
     }
 
@@ -92,8 +96,8 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         payable
         returns (bool)
     {
-        require(msg.value == _price && msg.value > 0);
-        require(_minTokensReturned > 0);
+        require(msg.value == _price && msg.value > 0, "INVALID PRICE");
+        require(_minTokensReturned > 0, "INVALID SLIPPAGE");
         // calculate beneficiary fees
         uint256 value = _price;
         uint256 reward = (_price * feePct) / pctBase;
@@ -101,21 +105,18 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         // calculate tokens returned
         uint256 tokensReturned;
         if (totalSupply == 0) {
-            tokensReturned = calculatePurchaseReturn(
-                0,
-                poolBalance,
-                reserveRatio,
-                value
-            );
-            require(tokensReturned >= _minTokensReturned);
+            tokensReturned = IBondingCurve(bondingCurve)
+                .calculateInitializationReturn(value, reserveRatio);
+            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
         } else {
-            tokensReturned = calculatePurchaseReturn(
-                totalSupply,
-                poolBalance,
-                reserveRatio,
-                value
-            );
-            require(tokensReturned >= _minTokensReturned);
+            tokensReturned = IBondingCurve(bondingCurve)
+                .calculatePurchaseReturn(
+                    totalSupply,
+                    poolBalance,
+                    reserveRatio,
+                    value
+                );
+            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
         }
         totalSupply += tokensReturned;
         totalBalance[msg.sender] += tokensReturned;
@@ -142,18 +143,18 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         returns (bool)
     {
         require(
-            _tokens > 0 &&
-                poolBalance > 0 &&
-                _tokens <= totalBalance[msg.sender]
+            _tokens > 0 && _tokens <= totalBalance[msg.sender],
+            "INVALID TOKEN AMT"
         );
-        require(_minETHReturned > 0);
-        uint256 ethReturned = calculateSaleReturn(
+        require(poolBalance > 0, "PB<0");
+        require(_minETHReturned > 0, "INVALID SLIPPAGE");
+        uint256 ethReturned = IBondingCurve(bondingCurve).calculateSaleReturn(
             totalSupply,
             poolBalance,
             reserveRatio,
             _tokens
         );
-        require(ethReturned >= _minETHReturned);
+        require(ethReturned >= _minETHReturned, "SLIPPAGE");
         poolBalance -= ethReturned;
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
@@ -191,7 +192,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         returns (bool)
     {
         if (isCuratingLayer[msg.sender][_layerIndex]) {
-            revert("already staked");
+            revert("CURATED");
         } else {
             addressToCuratedLayerIndex[msg.sender].push(_layerIndex);
             if (!isCurating[msg.sender]) {
@@ -209,7 +210,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         returns (bool)
     {
         if (!isCuratingLayer[msg.sender][_layerIndex]) {
-            revert("no stake");
+            revert("NOT CURATED");
         }
         for (
             uint256 i;
@@ -243,7 +244,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         nonReentrant
         returns (bool)
     {
-        require(rewards[_beneficiary] > 0);
+        require(rewards[_beneficiary] > 0, "NO REWARDS");
         sendValue(_beneficiary, rewards[_beneficiary]);
         rewards[_beneficiary] = 0;
         emit RewardClaimed(_beneficiary);
@@ -253,10 +254,10 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     // ============ Utility ============
 
     function sendValue(address recipient, uint256 amount) internal {
-        require(address(this).balance >= amount);
+        require(address(this).balance >= amount, "INVALID AMT");
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = payable(recipient).call{value: amount}("");
+        (bool success, ) = payable(recipient).call{value: amount}("REVERTED");
         require(success);
     }
 }

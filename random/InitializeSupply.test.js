@@ -3,8 +3,8 @@
 const { ethers, waffle } = require('hardhat');
 const { provider } = waffle;
 const { expect }  = require('chai');
-const { deployTestContractSetup } = require("./helpers/deploy");
-const { NAME, SYMBOL } = require('./helpers/constants');
+const { deployTestContractSetup } = require("../test/helpers/deploy");
+const { NAME, SYMBOL } = require('../test/helpers/constants');
 
 describe("Initialize supply", async () => {
   let market, signer, creator;

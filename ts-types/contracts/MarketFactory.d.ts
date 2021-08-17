@@ -11,7 +11,7 @@ import {
   PopulatedTransaction,
   BaseContract,
   ContractTransaction,
-  PayableOverrides,
+  Overrides,
   CallOverrides,
 } from "ethers";
 import { BytesLike } from "@ethersproject/bytes";
@@ -21,16 +21,25 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface MarketFactoryInterface extends ethers.utils.Interface {
   functions: {
+    "bondingCurve()": FunctionFragment;
     "createMarket(string,string)": FunctionFragment;
     "logic()": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "bondingCurve",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "createMarket",
     values: [string, string]
   ): string;
   encodeFunctionData(functionFragment: "logic", values?: undefined): string;
 
+  decodeFunctionResult(
+    functionFragment: "bondingCurve",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "createMarket",
     data: BytesLike
@@ -88,24 +97,30 @@ export class MarketFactory extends BaseContract {
   interface: MarketFactoryInterface;
 
   functions: {
+    bondingCurve(overrides?: CallOverrides): Promise<[string]>;
+
     createMarket(
       _name: string,
       _symbol: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     logic(overrides?: CallOverrides): Promise<[string]>;
   };
 
+  bondingCurve(overrides?: CallOverrides): Promise<string>;
+
   createMarket(
     _name: string,
     _symbol: string,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   logic(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
+    bondingCurve(overrides?: CallOverrides): Promise<string>;
+
     createMarket(
       _name: string,
       _symbol: string,
@@ -133,20 +148,24 @@ export class MarketFactory extends BaseContract {
   };
 
   estimateGas: {
+    bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
+
     createMarket(
       _name: string,
       _symbol: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     logic(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
+    bondingCurve(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     createMarket(
       _name: string,
       _symbol: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     logic(overrides?: CallOverrides): Promise<PopulatedTransaction>;

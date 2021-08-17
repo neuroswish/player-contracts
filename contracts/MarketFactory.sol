@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 contract MarketFactory {
     // ======== Immutable storage ========
     address public immutable logic;
+    address public immutable bondingCurve;
     // ======== Events ========
     event marketDeployed(
         address indexed contractAddress,
@@ -25,18 +26,18 @@ contract MarketFactory {
     );
 
     // ======== Constructor ========
-    constructor() {
+    constructor(address _bondingCurve) {
+        bondingCurve = _bondingCurve;
         logic = address(new Market());
     }
 
     // ======== Deploy contract ========
     function createMarket(string calldata _name, string calldata _symbol)
         external
-        payable
         returns (address market)
     {
         market = Clones.clone(logic);
-        Market(market).initialize(_name, _symbol);
+        Market(market).initialize(_name, _symbol, bondingCurve);
         emit marketDeployed(market, msg.sender, _name, _symbol);
     }
 }

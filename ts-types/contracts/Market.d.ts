@@ -25,14 +25,13 @@ interface MarketInterface extends ethers.utils.Interface {
     "addLayer(string)": FunctionFragment;
     "addressToCreatedLayerIndex(address,uint256)": FunctionFragment;
     "addressToCuratedLayerIndex(address,uint256)": FunctionFragment;
+    "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
-    "calculateSaleReturn(uint256,uint256,uint32,uint256)": FunctionFragment;
     "claimReward(address)": FunctionFragment;
     "curate(uint256)": FunctionFragment;
     "curators(uint256)": FunctionFragment;
     "feePct()": FunctionFragment;
-    "initMaxExpArray()": FunctionFragment;
-    "initialize(string,string)": FunctionFragment;
+    "initialize(string,string,address)": FunctionFragment;
     "isCurating(address)": FunctionFragment;
     "isCuratingLayer(address,uint256)": FunctionFragment;
     "layers(uint256)": FunctionFragment;
@@ -59,12 +58,12 @@ interface MarketInterface extends ethers.utils.Interface {
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "buy",
-    values: [BigNumberish, BigNumberish]
+    functionFragment: "bondingCurve",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "calculateSaleReturn",
-    values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]
+    functionFragment: "buy",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "claimReward", values: [string]): string;
   encodeFunctionData(
@@ -77,12 +76,8 @@ interface MarketInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "feePct", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "initMaxExpArray",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string]
+    values: [string, string, string]
   ): string;
   encodeFunctionData(functionFragment: "isCurating", values: [string]): string;
   encodeFunctionData(
@@ -132,11 +127,11 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "addressToCuratedLayerIndex",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "calculateSaleReturn",
+    functionFragment: "bondingCurve",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "claimReward",
     data: BytesLike
@@ -144,10 +139,6 @@ interface MarketInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "curate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "curators", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "feePct", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "initMaxExpArray",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isCurating", data: BytesLike): Result;
   decodeFunctionResult(
@@ -262,19 +253,13 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    bondingCurve(overrides?: CallOverrides): Promise<[string]>;
+
     buy(
       _price: BigNumberish,
       _minTokensReturned: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    calculateSaleReturn(
-      _supply: BigNumberish,
-      _poolBalance: BigNumberish,
-      _reserveRatio: BigNumberish,
-      _tokens: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
 
     claimReward(
       _beneficiary: string,
@@ -290,13 +275,10 @@ export class Market extends BaseContract {
 
     feePct(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    initMaxExpArray(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     initialize(
       _name: string,
       _symbol: string,
+      _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -360,19 +342,13 @@ export class Market extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
+  bondingCurve(overrides?: CallOverrides): Promise<string>;
+
   buy(
     _price: BigNumberish,
     _minTokensReturned: BigNumberish,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  calculateSaleReturn(
-    _supply: BigNumberish,
-    _poolBalance: BigNumberish,
-    _reserveRatio: BigNumberish,
-    _tokens: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
 
   claimReward(
     _beneficiary: string,
@@ -388,13 +364,10 @@ export class Market extends BaseContract {
 
   feePct(overrides?: CallOverrides): Promise<BigNumber>;
 
-  initMaxExpArray(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   initialize(
     _name: string,
     _symbol: string,
+    _bondingCurve: string,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -455,19 +428,13 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    bondingCurve(overrides?: CallOverrides): Promise<string>;
+
     buy(
       _price: BigNumberish,
       _minTokensReturned: BigNumberish,
       overrides?: CallOverrides
     ): Promise<boolean>;
-
-    calculateSaleReturn(
-      _supply: BigNumberish,
-      _poolBalance: BigNumberish,
-      _reserveRatio: BigNumberish,
-      _tokens: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
 
     claimReward(
       _beneficiary: string,
@@ -483,11 +450,10 @@ export class Market extends BaseContract {
 
     feePct(overrides?: CallOverrides): Promise<BigNumber>;
 
-    initMaxExpArray(overrides?: CallOverrides): Promise<void>;
-
     initialize(
       _name: string,
       _symbol: string,
+      _bondingCurve: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -621,18 +587,12 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
+
     buy(
       _price: BigNumberish,
       _minTokensReturned: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    calculateSaleReturn(
-      _supply: BigNumberish,
-      _poolBalance: BigNumberish,
-      _reserveRatio: BigNumberish,
-      _tokens: BigNumberish,
-      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     claimReward(
@@ -649,13 +609,10 @@ export class Market extends BaseContract {
 
     feePct(overrides?: CallOverrides): Promise<BigNumber>;
 
-    initMaxExpArray(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     initialize(
       _name: string,
       _symbol: string,
+      _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -717,18 +674,12 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    bondingCurve(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     buy(
       _price: BigNumberish,
       _minTokensReturned: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    calculateSaleReturn(
-      _supply: BigNumberish,
-      _poolBalance: BigNumberish,
-      _reserveRatio: BigNumberish,
-      _tokens: BigNumberish,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     claimReward(
@@ -748,13 +699,10 @@ export class Market extends BaseContract {
 
     feePct(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    initMaxExpArray(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     initialize(
       _name: string,
       _symbol: string,
+      _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
