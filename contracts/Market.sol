@@ -107,7 +107,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
                 reserveRatio,
                 value
             );
-            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
+            require(tokensReturned >= _minTokensReturned);
         } else {
             tokensReturned = calculatePurchaseReturn(
                 totalSupply,
@@ -115,7 +115,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
                 reserveRatio,
                 value
             );
-            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
+            require(tokensReturned >= _minTokensReturned);
         }
         totalSupply += tokensReturned;
         totalBalance[msg.sender] += tokensReturned;
@@ -153,7 +153,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
             reserveRatio,
             _tokens
         );
-        require(ethReturned >= _minETHReturned, "SLIPPAGE");
+        require(ethReturned >= _minETHReturned);
         poolBalance -= ethReturned;
         totalSupply -= _tokens;
         totalBalance[msg.sender] -= _tokens;
@@ -243,7 +243,7 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
         nonReentrant
         returns (bool)
     {
-        require(rewards[_beneficiary] > 0, "no rewards to claim");
+        require(rewards[_beneficiary] > 0);
         sendValue(_beneficiary, rewards[_beneficiary]);
         rewards[_beneficiary] = 0;
         emit RewardClaimed(_beneficiary);
@@ -253,16 +253,10 @@ contract Market is BondingCurve, ReentrancyGuardUpgradeable {
     // ============ Utility ============
 
     function sendValue(address recipient, uint256 amount) internal {
-        require(
-            address(this).balance >= amount,
-            "Address: insufficient balance"
-        );
+        require(address(this).balance >= amount);
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
         (bool success, ) = payable(recipient).call{value: amount}("");
-        require(
-            success,
-            "Address: unable to send value, recipient may have reverted"
-        );
+        require(success);
     }
 }

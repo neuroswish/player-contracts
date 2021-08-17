@@ -8,7 +8,7 @@ const { NAME, SYMBOL, FEE_PCT, PCT_BASE } = require('./helpers/constants');
 
 
 describe("Deploy new market via clone proxy from Market Factory", async () => {
-  let market, signer, creator;
+  let market, signer, creator, deploymentGas;
 
   // runs before all tests in this file, regardless of line placement
   before(async() => {
@@ -18,6 +18,8 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     // deploy market contract
     const contract = await(deployTestContractSetup(NAME, SYMBOL, provider, creator));
     market = contract.market
+    deploymentGas = contract.gasUsed;
+    console.log(deploymentGas);
   });
 
   it('Market has been initialized', async() => {
@@ -27,10 +29,9 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     expect(symbol).to.equal(SYMBOL);
   });
 
-  // it('Market has been initialized by the creator', async() => {
-  //   const marketCreator = await market.creator();
-  //   expect(marketCreator).to.equal(creator.address);
-  // });
+  it('Uses 230540 gas', async() => {
+    expect(deploymentGas.toString()).to.eq("230540");
+  });
 
   it('Pool balance is 0', async() => {
     const poolBalance = await market.poolBalance();
@@ -68,4 +69,9 @@ describe("Deploy new market via clone proxy from Market Factory", async () => {
     const expectedPctBase = ethers.BigNumber.from(PCT_BASE);
     expect(initializedPctBase.toString()).to.equal(expectedPctBase.toString());
   });
+
+   // it('Market has been initialized by the creator', async() => {
+  //   const marketCreator = await market.creator();
+  //   expect(marketCreator).to.equal(creator.address);
+  // });
 })

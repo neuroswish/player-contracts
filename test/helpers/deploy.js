@@ -46,8 +46,11 @@ async function deployTestContractSetup(
   await factory.createMarket(name, symbol);
   const market = await getMarketContractFromEventLogs(provider, factory, signer);
 
+  const deployment = await factory.createMarket(name, symbol);
+  const receipt = await deployment.wait();
+  const gasUsed = receipt.gasUsed;
   return {
-    market
+    market, gasUsed
   };
 }
 

@@ -1,0 +1,13 @@
+{
+  "scenarios": [
+    {
+      "ethContributed": "7.342",
+      "tokensReturned": "1.2",
+      "initialSupply": "0",
+      "finalSupply": "2141",
+      "initialPoolBalance": "0",
+      "finalPoolBalance": "0",
+      "rewards": "0"
+    }
+  ]
+}
