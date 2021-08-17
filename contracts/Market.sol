@@ -8,14 +8,15 @@ import "./interfaces/IBondingCurve.sol";
  * @title Market
  * @author neuroswish
  *
- * Implement layered cryptomedia markets
+ * Implement information markets
  *
  * "All of you Mario, it's all a game"
  */
 
 contract Market is ReentrancyGuardUpgradeable {
-    // ======== Continuous token params ========
+    // ======== Interface addresses ========
     address public bondingCurve;
+
     // ======== Continuous token params ========
     string public name; // market name
     string public symbol; // market token symbol
@@ -45,15 +46,6 @@ contract Market is ReentrancyGuardUpgradeable {
     uint256 layerIndex = 0; // initialize layerIndex (foundational layer will have an index of 0)
 
     // ======== Events ========
-    event LayerAdded(
-        address indexed creator,
-        string contentURI,
-        uint256 layerIndex
-    );
-    event Curated(address indexed curator, uint256 layerIndex);
-    event Removed(address indexed curator, uint256 layerIndex);
-    event RewardsAdded(uint256 totalRewardAmount);
-    event RewardClaimed(address indexed beneficiary);
     event Buy(
         address indexed buyer,
         uint256 poolBalance,
@@ -68,8 +60,20 @@ contract Market is ReentrancyGuardUpgradeable {
         uint256 tokens,
         uint256 eth
     );
+    event LayerAdded(
+        address indexed creator,
+        string contentURI,
+        uint256 layerIndex
+    );
+    event Curated(address indexed curator, uint256 layerIndex);
+    event Removed(address indexed curator, uint256 layerIndex);
+    event RewardsAdded(uint256 totalRewardAmount);
+    event RewardClaimed(address indexed beneficiary);
 
     // ======== Modifiers ========
+    /**
+     * @notice Check to see if address holds tokens
+     */
     modifier holder(address user) {
         require(totalBalance[user] > 0, "MUST HOLD TOKENS");
         _;
@@ -91,6 +95,12 @@ contract Market is ReentrancyGuardUpgradeable {
         __ReentrancyGuard_init();
     }
 
+    // ======== Functions ========
+
+    /**
+     * @notice Buy market tokens with ETH
+     * @dev Emits a Buy event upon success; callable by anyone
+     */
     function buy(uint256 _price, uint256 _minTokensReturned)
         public
         payable
@@ -126,6 +136,10 @@ contract Market is ReentrancyGuardUpgradeable {
         return true;
     }
 
+    /**
+     * @notice Calculate beneficiary rewards for a buy event
+     * @dev Emits a RewardsAdded event upon success; internally called by buy
+     */
     function calculateRewards(uint256 _totalRewardAmount) internal {
         for (uint256 i; i < curators.length; i++) {
             address beneficiary = curators[i];
@@ -136,6 +150,10 @@ contract Market is ReentrancyGuardUpgradeable {
         emit RewardsAdded(_totalRewardAmount);
     }
 
+    /**
+     * @notice Sell market tokens for ETH
+     * @dev Emits a Sell event upon success; callable by token holders
+     */
     function sell(uint256 _tokens, uint256 _minETHReturned)
         public
         holder(msg.sender)
@@ -171,6 +189,10 @@ contract Market is ReentrancyGuardUpgradeable {
         return true;
     }
 
+    /**
+     * @notice Add a layer to the information market
+     * @dev Emits a LayerAdded event upon success; callable by token holders
+     */
     function addLayer(string memory _URI)
         public
         holder(msg.sender)
@@ -186,6 +208,10 @@ contract Market is ReentrancyGuardUpgradeable {
         return true;
     }
 
+    /**
+     * @notice Curate a layer to the information market by specifying the layer index
+     * @dev Emits a Curated event upon success; callable by token holders
+     */
     function curate(uint256 _layerIndex)
         public
         holder(msg.sender)
@@ -204,6 +230,10 @@ contract Market is ReentrancyGuardUpgradeable {
         }
     }
 
+    /**
+     * @notice Remove a curation from a layer in the information market by specifying the layer index
+     * @dev Emits a Removed event upon success; callable by token holders, will revert if holder is not currently curating the layer
+     */
     function removeCuration(uint256 _layerIndex)
         public
         holder(msg.sender)
@@ -239,6 +269,10 @@ contract Market is ReentrancyGuardUpgradeable {
         return true;
     }
 
+    /**
+     * @notice Claim beneficiary rewards allotted to curators for curating layers in the information market
+     * @dev Emits a RewardClaimed event upon success; callable by anyone, will revert if no rewards to be collected
+     */
     function claimReward(address _beneficiary)
         public
         nonReentrant
@@ -253,7 +287,14 @@ contract Market is ReentrancyGuardUpgradeable {
 
     // ============ Utility ============
 
-    function sendValue(address recipient, uint256 amount) internal {
+    /**
+     * @notice Send ETH in a safe manner
+     * @dev Prevents reentrancy
+     */
+    function sendValue(address recipient, uint256 amount)
+        internal
+        nonReentrant
+    {
         require(address(this).balance >= amount, "INVALID AMT");
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value

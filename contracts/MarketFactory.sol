@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
  * @title Market Factory
  * @author neuroswish
  *
- * Factory for deploying new market contracts
+ * Factory for deploying new information markets
  *
- * "Listen to the kids, bro"
+ * "No one man should have all that power, the clock's tickin' I just count the hours"
  */
 
 contract MarketFactory {
