@@ -21,8 +21,7 @@ contract MarketFactory {
     event marketDeployed(
         address indexed contractAddress,
         address indexed creator,
-        string marketName,
-        string marketTokenSymbol
+        string marketName
     );
 
     // ======== Constructor ========
@@ -32,12 +31,12 @@ contract MarketFactory {
     }
 
     // ======== Deploy contract ========
-    function createMarket(string calldata _name, string calldata _symbol)
+    function createMarket(string calldata _name)
         external
         returns (address market)
     {
         market = Clones.clone(logic);
-        Market(market).initialize(_name, _symbol, bondingCurve);
-        emit marketDeployed(market, msg.sender, _name, _symbol);
+        Market(market).initialize(_name, bondingCurve);
+        emit marketDeployed(market, msg.sender, _name);
     }
 }

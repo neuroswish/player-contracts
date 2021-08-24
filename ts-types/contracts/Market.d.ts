@@ -23,39 +23,33 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 interface MarketInterface extends ethers.utils.Interface {
   functions: {
     "addLayer(string)": FunctionFragment;
-    "addressToCreatedLayerIndex(address,uint256)": FunctionFragment;
-    "addressToCuratedLayerIndex(address,uint256)": FunctionFragment;
+    "addressToCuratedLayers(address,uint256)": FunctionFragment;
+    "addressToLayer(address)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
-    "claimReward(address)": FunctionFragment;
-    "curate(uint256)": FunctionFragment;
-    "curators(uint256)": FunctionFragment;
-    "feePct()": FunctionFragment;
-    "initialize(string,string,address)": FunctionFragment;
-    "isCurating(address)": FunctionFragment;
-    "isCuratingLayer(address,uint256)": FunctionFragment;
+    "curate(address)": FunctionFragment;
+    "hasCreated(address)": FunctionFragment;
+    "initialize(string,address)": FunctionFragment;
+    "isCuratingLayer(address,address)": FunctionFragment;
     "layers(uint256)": FunctionFragment;
     "name()": FunctionFragment;
-    "pctBase()": FunctionFragment;
     "poolBalance()": FunctionFragment;
     "ppm()": FunctionFragment;
-    "removeCuration(uint256)": FunctionFragment;
+    "removeCuration(address)": FunctionFragment;
     "reserveRatio()": FunctionFragment;
-    "rewards(address)": FunctionFragment;
     "sell(uint256,uint256)": FunctionFragment;
-    "symbol()": FunctionFragment;
     "totalSupply()": FunctionFragment;
   };
 
   encodeFunctionData(functionFragment: "addLayer", values: [string]): string;
   encodeFunctionData(
-    functionFragment: "addressToCreatedLayerIndex",
+    functionFragment: "addressToCuratedLayers",
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "addressToCuratedLayerIndex",
-    values: [string, BigNumberish]
+    functionFragment: "addressToLayer",
+    values: [string]
   ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
@@ -66,31 +60,21 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "buy",
     values: [BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "claimReward", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "curate",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "curators",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(functionFragment: "feePct", values?: undefined): string;
+  encodeFunctionData(functionFragment: "curate", values: [string]): string;
+  encodeFunctionData(functionFragment: "hasCreated", values: [string]): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string, string]
+    values: [string, string]
   ): string;
-  encodeFunctionData(functionFragment: "isCurating", values: [string]): string;
   encodeFunctionData(
     functionFragment: "isCuratingLayer",
-    values: [string, BigNumberish]
+    values: [string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "layers",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
-  encodeFunctionData(functionFragment: "pctBase", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "poolBalance",
     values?: undefined
@@ -98,18 +82,16 @@ interface MarketInterface extends ethers.utils.Interface {
   encodeFunctionData(functionFragment: "ppm", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "removeCuration",
-    values: [BigNumberish]
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "reserveRatio",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "rewards", values: [string]): string;
   encodeFunctionData(
     functionFragment: "sell",
     values: [BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
@@ -117,11 +99,11 @@ interface MarketInterface extends ethers.utils.Interface {
 
   decodeFunctionResult(functionFragment: "addLayer", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "addressToCreatedLayerIndex",
+    functionFragment: "addressToCuratedLayers",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "addressToCuratedLayerIndex",
+    functionFragment: "addressToLayer",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
@@ -130,22 +112,15 @@ interface MarketInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "claimReward",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "curate", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "curators", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "feePct", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "hasCreated", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "isCurating", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "isCuratingLayer",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "layers", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "pctBase", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "poolBalance",
     data: BytesLike
@@ -159,9 +134,7 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "reserveRatio",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "rewards", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "sell", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "totalSupply",
     data: BytesLike
@@ -170,9 +143,9 @@ interface MarketInterface extends ethers.utils.Interface {
   events: {
     "Approval(address,address,uint256)": EventFragment;
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
-    "Curated(address,uint256)": EventFragment;
-    "LayerAdded(address,string,uint256)": EventFragment;
-    "Removed(address,uint256)": EventFragment;
+    "Curated(address,address)": EventFragment;
+    "LayerAdded(address,string)": EventFragment;
+    "Removed(address,address)": EventFragment;
     "RewardClaimed(address)": EventFragment;
     "RewardsAdded(uint256)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
@@ -239,17 +212,16 @@ export class Market extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    addressToCreatedLayerIndex(
+    addressToCuratedLayers(
       arg0: string,
       arg1: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    ): Promise<[string, string] & { creator: string; URI: string }>;
 
-    addressToCuratedLayerIndex(
+    addressToLayer(
       arg0: string,
-      arg1: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    ): Promise<[string, string] & { creator: string; URI: string }>;
 
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -261,32 +233,22 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    claimReward(
-      _beneficiary: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     curate(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    curators(arg0: BigNumberish, overrides?: CallOverrides): Promise<[string]>;
-
-    feePct(overrides?: CallOverrides): Promise<[BigNumber]>;
+    hasCreated(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
 
     initialize(
       _name: string,
-      _URI: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    isCurating(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
-
     isCuratingLayer(
       arg0: string,
-      arg1: BigNumberish,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
@@ -297,28 +259,22 @@ export class Market extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<[string]>;
 
-    pctBase(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     poolBalance(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     ppm(overrides?: CallOverrides): Promise<[number]>;
 
     removeCuration(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     reserveRatio(overrides?: CallOverrides): Promise<[number]>;
-
-    rewards(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     sell(
       _tokens: BigNumberish,
       _minETHReturned: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    symbol(overrides?: CallOverrides): Promise<[string]>;
 
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
@@ -328,17 +284,16 @@ export class Market extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  addressToCreatedLayerIndex(
+  addressToCuratedLayers(
     arg0: string,
     arg1: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  ): Promise<[string, string] & { creator: string; URI: string }>;
 
-  addressToCuratedLayerIndex(
+  addressToLayer(
     arg0: string,
-    arg1: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  ): Promise<[string, string] & { creator: string; URI: string }>;
 
   balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -350,32 +305,22 @@ export class Market extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  claimReward(
-    _beneficiary: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   curate(
-    _layerIndex: BigNumberish,
+    _creator: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  curators(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
-
-  feePct(overrides?: CallOverrides): Promise<BigNumber>;
+  hasCreated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
   initialize(
     _name: string,
-    _URI: string,
     _bondingCurve: string,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  isCurating(arg0: string, overrides?: CallOverrides): Promise<boolean>;
-
   isCuratingLayer(
     arg0: string,
-    arg1: BigNumberish,
+    arg1: string,
     overrides?: CallOverrides
   ): Promise<boolean>;
 
@@ -386,20 +331,16 @@ export class Market extends BaseContract {
 
   name(overrides?: CallOverrides): Promise<string>;
 
-  pctBase(overrides?: CallOverrides): Promise<BigNumber>;
-
   poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
   ppm(overrides?: CallOverrides): Promise<number>;
 
   removeCuration(
-    _layerIndex: BigNumberish,
+    _creator: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   reserveRatio(overrides?: CallOverrides): Promise<number>;
-
-  rewards(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   sell(
     _tokens: BigNumberish,
@@ -407,24 +348,21 @@ export class Market extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  symbol(overrides?: CallOverrides): Promise<string>;
-
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
     addLayer(_URI: string, overrides?: CallOverrides): Promise<boolean>;
 
-    addressToCreatedLayerIndex(
+    addressToCuratedLayers(
       arg0: string,
       arg1: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ): Promise<[string, string] & { creator: string; URI: string }>;
 
-    addressToCuratedLayerIndex(
+    addressToLayer(
       arg0: string,
-      arg1: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ): Promise<[string, string] & { creator: string; URI: string }>;
 
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -436,32 +374,19 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    claimReward(
-      _beneficiary: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
+    curate(_creator: string, overrides?: CallOverrides): Promise<boolean>;
 
-    curate(
-      _layerIndex: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
-    curators(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
-
-    feePct(overrides?: CallOverrides): Promise<BigNumber>;
+    hasCreated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
     initialize(
       _name: string,
-      _URI: string,
       _bondingCurve: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    isCurating(arg0: string, overrides?: CallOverrides): Promise<boolean>;
-
     isCuratingLayer(
       arg0: string,
-      arg1: BigNumberish,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
@@ -472,28 +397,22 @@ export class Market extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<string>;
 
-    pctBase(overrides?: CallOverrides): Promise<BigNumber>;
-
     poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
     ppm(overrides?: CallOverrides): Promise<number>;
 
     removeCuration(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
     reserveRatio(overrides?: CallOverrides): Promise<number>;
-
-    rewards(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     sell(
       _tokens: BigNumberish,
       _minETHReturned: BigNumberish,
       overrides?: CallOverrides
     ): Promise<boolean>;
-
-    symbol(overrides?: CallOverrides): Promise<string>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
   };
@@ -527,27 +446,26 @@ export class Market extends BaseContract {
 
     Curated(
       curator?: string | null,
-      layerIndex?: null
+      layerCreator?: string | null
     ): TypedEventFilter<
-      [string, BigNumber],
-      { curator: string; layerIndex: BigNumber }
+      [string, string],
+      { curator: string; layerCreator: string }
     >;
 
     LayerAdded(
       creator?: string | null,
-      contentURI?: null,
-      layerIndex?: null
+      contentURI?: null
     ): TypedEventFilter<
-      [string, string, BigNumber],
-      { creator: string; contentURI: string; layerIndex: BigNumber }
+      [string, string],
+      { creator: string; contentURI: string }
     >;
 
     Removed(
       curator?: string | null,
-      layerIndex?: null
+      layerCreator?: string | null
     ): TypedEventFilter<
-      [string, BigNumber],
-      { curator: string; layerIndex: BigNumber }
+      [string, string],
+      { curator: string; layerCreator: string }
     >;
 
     RewardClaimed(
@@ -591,17 +509,13 @@ export class Market extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    addressToCreatedLayerIndex(
+    addressToCuratedLayers(
       arg0: string,
       arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    addressToCuratedLayerIndex(
-      arg0: string,
-      arg1: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    addressToLayer(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -613,32 +527,22 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    claimReward(
-      _beneficiary: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     curate(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    curators(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
-
-    feePct(overrides?: CallOverrides): Promise<BigNumber>;
+    hasCreated(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       _name: string,
-      _URI: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    isCurating(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
     isCuratingLayer(
       arg0: string,
-      arg1: BigNumberish,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -646,28 +550,22 @@ export class Market extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
 
-    pctBase(overrides?: CallOverrides): Promise<BigNumber>;
-
     poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
     ppm(overrides?: CallOverrides): Promise<BigNumber>;
 
     removeCuration(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     reserveRatio(overrides?: CallOverrides): Promise<BigNumber>;
-
-    rewards(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     sell(
       _tokens: BigNumberish,
       _minETHReturned: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    symbol(overrides?: CallOverrides): Promise<BigNumber>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
   };
@@ -678,15 +576,14 @@ export class Market extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    addressToCreatedLayerIndex(
+    addressToCuratedLayers(
       arg0: string,
       arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    addressToCuratedLayerIndex(
+    addressToLayer(
       arg0: string,
-      arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -703,38 +600,25 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    claimReward(
-      _beneficiary: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     curate(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    curators(
-      arg0: BigNumberish,
+    hasCreated(
+      arg0: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    feePct(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     initialize(
       _name: string,
-      _URI: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    isCurating(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     isCuratingLayer(
       arg0: string,
-      arg1: BigNumberish,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -745,31 +629,22 @@ export class Market extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    pctBase(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     poolBalance(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     ppm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     removeCuration(
-      _layerIndex: BigNumberish,
+      _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     reserveRatio(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    rewards(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
 
     sell(
       _tokens: BigNumberish,
       _minETHReturned: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
-
-    symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };

@@ -22,7 +22,7 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 interface MarketFactoryInterface extends ethers.utils.Interface {
   functions: {
     "bondingCurve()": FunctionFragment;
-    "createMarket(string,string)": FunctionFragment;
+    "createMarket(string)": FunctionFragment;
     "logic()": FunctionFragment;
   };
 
@@ -32,7 +32,7 @@ interface MarketFactoryInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "createMarket",
-    values: [string, string]
+    values: [string]
   ): string;
   encodeFunctionData(functionFragment: "logic", values?: undefined): string;
 
@@ -47,7 +47,7 @@ interface MarketFactoryInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "logic", data: BytesLike): Result;
 
   events: {
-    "marketDeployed(address,address,string,string)": EventFragment;
+    "marketDeployed(address,address,string)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "marketDeployed"): EventFragment;
@@ -101,7 +101,6 @@ export class MarketFactory extends BaseContract {
 
     createMarket(
       _name: string,
-      _symbol: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -112,7 +111,6 @@ export class MarketFactory extends BaseContract {
 
   createMarket(
     _name: string,
-    _symbol: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -121,11 +119,7 @@ export class MarketFactory extends BaseContract {
   callStatic: {
     bondingCurve(overrides?: CallOverrides): Promise<string>;
 
-    createMarket(
-      _name: string,
-      _symbol: string,
-      overrides?: CallOverrides
-    ): Promise<string>;
+    createMarket(_name: string, overrides?: CallOverrides): Promise<string>;
 
     logic(overrides?: CallOverrides): Promise<string>;
   };
@@ -134,16 +128,10 @@ export class MarketFactory extends BaseContract {
     marketDeployed(
       contractAddress?: string | null,
       creator?: string | null,
-      marketName?: null,
-      marketTokenSymbol?: null
+      marketName?: null
     ): TypedEventFilter<
-      [string, string, string, string],
-      {
-        contractAddress: string;
-        creator: string;
-        marketName: string;
-        marketTokenSymbol: string;
-      }
+      [string, string, string],
+      { contractAddress: string; creator: string; marketName: string }
     >;
   };
 
@@ -152,7 +140,6 @@ export class MarketFactory extends BaseContract {
 
     createMarket(
       _name: string,
-      _symbol: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -164,7 +151,6 @@ export class MarketFactory extends BaseContract {
 
     createMarket(
       _name: string,
-      _symbol: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
