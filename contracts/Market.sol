@@ -22,16 +22,11 @@ contract Market is ReentrancyGuardUpgradeable {
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm; // ppm units
     uint256 public poolBalance; // ETH balance in contract pool
-    //uint256 public feePct; // percentage fee of buy amount distributed to beneficiaries (10**17)
-    //uint256 public pctBase; // 10**18
     uint256 public totalSupply; // total supply of tokens in circulation
     mapping(address => uint256) public balanceOf; // mapping of an address to that user's total token balance for this contract
 
     // ======== Player params ========
-    //address[] public curators; // addresses of active curators
-    //mapping(address => uint256) public rewards; // mapping from curator to their proportional reward amount for curating
-    //mapping(address => bool) public isCurating; // mapping of an address to bool representing whether address is currently curating
-    mapping(address => bool) public hasCreated; // mapping of an address to bool representing whether address has already added a layer
+    mapping(address => bool) public created; // mapping of an address to bool representing whether address has already added a layer
     mapping(address => mapping(address => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer
     // ======== Layer params ========
     struct Layer {
@@ -42,7 +37,6 @@ contract Market is ReentrancyGuardUpgradeable {
     Layer[] public layers; // array of all layers
     mapping(address => Layer) public addressToLayer; // mapping from an address to the layer the address has created
     mapping(address => Layer[]) public addressToCuratedLayers; // mapping from an address to layer index staked by that address
-    //uint256 layerIndex = 0; // initialize layerIndex (foundational layer will have an index of 0)
 
     // ======== Events ========
     event Buy(
@@ -60,10 +54,12 @@ contract Market is ReentrancyGuardUpgradeable {
         uint256 eth
     );
     event LayerAdded(address indexed creator, string contentURI);
-    event Curated(address indexed curator, address indexed layerCreator);
-    event Removed(address indexed curator, address indexed layerCreator);
-    event RewardsAdded(uint256 totalRewardAmount);
-    event RewardClaimed(address indexed beneficiary);
+    event LayerRemoved(address indexed creator);
+    event CurationAdded(address indexed curator, address indexed layerCreator);
+    event CurationRemoved(
+        address indexed curator,
+        address indexed layerCreator
+    );
 
     // ERC20 Events
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -90,8 +86,6 @@ contract Market is ReentrancyGuardUpgradeable {
     {
         reserveRatio = 333333;
         ppm = 1000000;
-        //feePct = 10**17;
-        //pctBase = 10**18;
         name = _name;
         bondingCurve = _bondingCurve;
         __ReentrancyGuard_init();
@@ -110,10 +104,6 @@ contract Market is ReentrancyGuardUpgradeable {
     {
         require(msg.value == _price && msg.value > 0, "INVALID PRICE");
         require(_minTokensReturned > 0, "INVALID SLIPPAGE");
-        // // calculate beneficiary fees
-        // uint256 value = _price;
-        // uint256 reward = (_price * feePct) / pctBase;
-        // value -= reward;
         // calculate tokens returned
         uint256 tokensReturned;
         if (totalSupply == 0) {
@@ -133,23 +123,8 @@ contract Market is ReentrancyGuardUpgradeable {
         _mint(msg.sender, tokensReturned);
         poolBalance += _price;
         emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, _price);
-        //calculateRewards(reward);
         return true;
     }
-
-    // /**
-    //  * @notice Calculate beneficiary rewards for a buy event
-    //  * @dev Emits a RewardsAdded event upon success; internally called by buy
-    //  */
-    // function calculateRewards(uint256 _totalRewardAmount) internal {
-    //     for (uint256 i; i < curators.length; i++) {
-    //         address beneficiary = curators[i];
-    //         uint256 reward = _totalRewardAmount *
-    //             (balanceOf[beneficiary] / totalSupply);
-    //         rewards[beneficiary] += reward;
-    //     }
-    //     emit RewardsAdded(_totalRewardAmount);
-    // }
 
     /**
      * @notice Sell market tokens for ETH
@@ -178,14 +153,6 @@ contract Market is ReentrancyGuardUpgradeable {
         poolBalance -= ethReturned;
         sendValue(payable(msg.sender), ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
-        // if (balanceOf[msg.sender] == 0) {
-        //     for (uint256 i; i < curators.length; i++) {
-        //         if (curators[i] == msg.sender) {
-        //             curators[i] = curators[curators.length - 1];
-        //             curators.pop();
-        //         }
-        //     }
-        // }
         return true;
     }
 
@@ -198,17 +165,25 @@ contract Market is ReentrancyGuardUpgradeable {
         holder(msg.sender)
         returns (bool)
     {
-        if (hasCreated[msg.sender]) {
-            revert("ALREADY CREATED");
-        }
+        require(!created[msg.sender], "ALREADY CREATED");
         Layer memory layer;
         layer.URI = _URI;
         layer.creator = msg.sender;
-        //layers[layerIndex] = layer;
-        //layerIndex++;
-        hasCreated[msg.sender] = true;
+        created[msg.sender] = true;
         addressToLayer[msg.sender] = layer;
         emit LayerAdded(msg.sender, _URI);
+        return true;
+    }
+
+    /**
+     * @notice Remove a layer from the information market
+     * @dev Emits a LayerAdded event upon success; callable by token holders
+     */
+
+    function removeLayer() public holder(msg.sender) returns (bool) {
+        require(created[msg.sender], "N/A");
+        Layer memory layer;
+        addressToLayer[msg.sender] = layer;
         return true;
     }
 
@@ -217,16 +192,11 @@ contract Market is ReentrancyGuardUpgradeable {
      * @dev Emits a Curated event upon success; callable by token holders
      */
     function curate(address _creator) public holder(msg.sender) returns (bool) {
-        Layer memory layer = addressToLayer[_creator];
         if (isCuratingLayer[msg.sender][_creator]) {
             revert("CURATED");
         } else {
-            addressToCuratedLayers[msg.sender].push(layer);
-            // if (!isCurating[msg.sender]) {
-            //     isCurating[msg.sender] = true;
-            //     curators.push(msg.sender);
-            // }
-            emit Curated(msg.sender, _creator);
+            addressToCuratedLayers[msg.sender].push(addressToLayer[_creator]);
+            emit CurationAdded(msg.sender, _creator);
             return true;
         }
     }
@@ -243,6 +213,7 @@ contract Market is ReentrancyGuardUpgradeable {
         if (!isCuratingLayer[msg.sender][_creator]) {
             revert("NOT CURATED");
         }
+        // remove caller from layer's list of curators
         uint256 curatorsLength = addressToLayer[_creator].curators.length;
         for (uint256 i; i < curatorsLength; i++) {
             if (msg.sender == addressToLayer[_creator].curators[i]) {
@@ -251,27 +222,10 @@ contract Market is ReentrancyGuardUpgradeable {
                 addressToLayer[_creator].curators.pop();
             }
         }
-
         isCuratingLayer[msg.sender][_creator] = false;
-        emit Removed(msg.sender, _creator);
+        emit CurationRemoved(msg.sender, _creator);
         return true;
     }
-
-    // /**
-    //  * @notice Claim beneficiary rewards allotted to curators for curating layers in the information market
-    //  * @dev Emits a RewardClaimed event upon success; callable by anyone, will revert if no rewards to be collected
-    //  */
-    // function claimReward(address _beneficiary)
-    //     public
-    //     nonReentrant
-    //     returns (bool)
-    // {
-    //     require(rewards[_beneficiary] > 0, "NO REWARDS");
-    //     sendValue(payable(_beneficiary), rewards[_beneficiary]);
-    //     rewards[_beneficiary] = 0;
-    //     emit RewardClaimed(_beneficiary);
-    //     return true;
-    // }
 
     // ============ Utility ============
 

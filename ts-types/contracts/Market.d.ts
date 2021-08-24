@@ -28,8 +28,8 @@ interface MarketInterface extends ethers.utils.Interface {
     "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
+    "created(address)": FunctionFragment;
     "curate(address)": FunctionFragment;
-    "hasCreated(address)": FunctionFragment;
     "initialize(string,address)": FunctionFragment;
     "isCuratingLayer(address,address)": FunctionFragment;
     "layers(uint256)": FunctionFragment;
@@ -37,6 +37,7 @@ interface MarketInterface extends ethers.utils.Interface {
     "poolBalance()": FunctionFragment;
     "ppm()": FunctionFragment;
     "removeCuration(address)": FunctionFragment;
+    "removeLayer()": FunctionFragment;
     "reserveRatio()": FunctionFragment;
     "sell(uint256,uint256)": FunctionFragment;
     "totalSupply()": FunctionFragment;
@@ -60,8 +61,8 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "buy",
     values: [BigNumberish, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "created", values: [string]): string;
   encodeFunctionData(functionFragment: "curate", values: [string]): string;
-  encodeFunctionData(functionFragment: "hasCreated", values: [string]): string;
   encodeFunctionData(
     functionFragment: "initialize",
     values: [string, string]
@@ -83,6 +84,10 @@ interface MarketInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "removeCuration",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "removeLayer",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "reserveRatio",
@@ -112,8 +117,8 @@ interface MarketInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "created", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "curate", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "hasCreated", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "isCuratingLayer",
@@ -131,6 +136,10 @@ interface MarketInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "removeLayer",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "reserveRatio",
     data: BytesLike
   ): Result;
@@ -143,22 +152,20 @@ interface MarketInterface extends ethers.utils.Interface {
   events: {
     "Approval(address,address,uint256)": EventFragment;
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
-    "Curated(address,address)": EventFragment;
+    "CurationAdded(address,address)": EventFragment;
+    "CurationRemoved(address,address)": EventFragment;
     "LayerAdded(address,string)": EventFragment;
-    "Removed(address,address)": EventFragment;
-    "RewardClaimed(address)": EventFragment;
-    "RewardsAdded(uint256)": EventFragment;
+    "LayerRemoved(address)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Buy"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Curated"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "CurationAdded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "CurationRemoved"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LayerAdded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Removed"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "RewardClaimed"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "RewardsAdded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "LayerRemoved"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Sell"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
@@ -233,12 +240,12 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    created(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
+
     curate(
       _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    hasCreated(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
 
     initialize(
       _name: string,
@@ -265,6 +272,10 @@ export class Market extends BaseContract {
 
     removeCuration(
       _creator: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    removeLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -305,12 +316,12 @@ export class Market extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
   curate(
     _creator: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  hasCreated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
   initialize(
     _name: string,
@@ -337,6 +348,10 @@ export class Market extends BaseContract {
 
   removeCuration(
     _creator: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  removeLayer(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -374,9 +389,9 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    curate(_creator: string, overrides?: CallOverrides): Promise<boolean>;
+    created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
-    hasCreated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+    curate(_creator: string, overrides?: CallOverrides): Promise<boolean>;
 
     initialize(
       _name: string,
@@ -405,6 +420,8 @@ export class Market extends BaseContract {
       _creator: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
+
+    removeLayer(overrides?: CallOverrides): Promise<boolean>;
 
     reserveRatio(overrides?: CallOverrides): Promise<number>;
 
@@ -444,7 +461,15 @@ export class Market extends BaseContract {
       }
     >;
 
-    Curated(
+    CurationAdded(
+      curator?: string | null,
+      layerCreator?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { curator: string; layerCreator: string }
+    >;
+
+    CurationRemoved(
       curator?: string | null,
       layerCreator?: string | null
     ): TypedEventFilter<
@@ -460,21 +485,9 @@ export class Market extends BaseContract {
       { creator: string; contentURI: string }
     >;
 
-    Removed(
-      curator?: string | null,
-      layerCreator?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { curator: string; layerCreator: string }
-    >;
-
-    RewardClaimed(
-      beneficiary?: string | null
-    ): TypedEventFilter<[string], { beneficiary: string }>;
-
-    RewardsAdded(
-      totalRewardAmount?: null
-    ): TypedEventFilter<[BigNumber], { totalRewardAmount: BigNumber }>;
+    LayerRemoved(
+      creator?: string | null
+    ): TypedEventFilter<[string], { creator: string }>;
 
     Sell(
       seller?: string | null,
@@ -527,12 +540,12 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    created(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
     curate(
       _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    hasCreated(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       _name: string,
@@ -556,6 +569,10 @@ export class Market extends BaseContract {
 
     removeCuration(
       _creator: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    removeLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -600,14 +617,14 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    created(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     curate(
       _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    hasCreated(
-      arg0: string,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     initialize(
@@ -635,6 +652,10 @@ export class Market extends BaseContract {
 
     removeCuration(
       _creator: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    removeLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
