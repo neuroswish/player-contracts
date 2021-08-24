@@ -25,6 +25,7 @@ interface MarketInterface extends ethers.utils.Interface {
     "addLayer(string)": FunctionFragment;
     "addressToCreatedLayerIndex(address,uint256)": FunctionFragment;
     "addressToCuratedLayerIndex(address,uint256)": FunctionFragment;
+    "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
     "claimReward(address)": FunctionFragment;
@@ -44,7 +45,6 @@ interface MarketInterface extends ethers.utils.Interface {
     "rewards(address)": FunctionFragment;
     "sell(uint256,uint256)": FunctionFragment;
     "symbol()": FunctionFragment;
-    "totalBalance(address)": FunctionFragment;
     "totalSupply()": FunctionFragment;
   };
 
@@ -57,6 +57,7 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "addressToCuratedLayerIndex",
     values: [string, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "bondingCurve",
     values?: undefined
@@ -110,10 +111,6 @@ interface MarketInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "totalBalance",
-    values: [string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
   ): string;
@@ -127,6 +124,7 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "addressToCuratedLayerIndex",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "bondingCurve",
     data: BytesLike
@@ -165,15 +163,12 @@ interface MarketInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "sell", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "totalBalance",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "totalSupply",
     data: BytesLike
   ): Result;
 
   events: {
+    "Approval(address,address,uint256)": EventFragment;
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
     "Curated(address,uint256)": EventFragment;
     "LayerAdded(address,string,uint256)": EventFragment;
@@ -181,8 +176,10 @@ interface MarketInterface extends ethers.utils.Interface {
     "RewardClaimed(address)": EventFragment;
     "RewardsAdded(uint256)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
+    "Transfer(address,address,uint256)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Buy"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Curated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LayerAdded"): EventFragment;
@@ -190,6 +187,7 @@ interface MarketInterface extends ethers.utils.Interface {
   getEvent(nameOrSignatureOrTopic: "RewardClaimed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RewardsAdded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Sell"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
 
 export class Market extends BaseContract {
@@ -253,6 +251,8 @@ export class Market extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    balanceOf(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
+
     bondingCurve(overrides?: CallOverrides): Promise<[string]>;
 
     buy(
@@ -277,7 +277,7 @@ export class Market extends BaseContract {
 
     initialize(
       _name: string,
-      _symbol: string,
+      _URI: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -320,8 +320,6 @@ export class Market extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<[string]>;
 
-    totalBalance(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
-
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
@@ -341,6 +339,8 @@ export class Market extends BaseContract {
     arg1: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   bondingCurve(overrides?: CallOverrides): Promise<string>;
 
@@ -366,7 +366,7 @@ export class Market extends BaseContract {
 
   initialize(
     _name: string,
-    _symbol: string,
+    _URI: string,
     _bondingCurve: string,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -409,8 +409,6 @@ export class Market extends BaseContract {
 
   symbol(overrides?: CallOverrides): Promise<string>;
 
-  totalBalance(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
@@ -427,6 +425,8 @@ export class Market extends BaseContract {
       arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<string>;
 
@@ -452,7 +452,7 @@ export class Market extends BaseContract {
 
     initialize(
       _name: string,
-      _symbol: string,
+      _URI: string,
       _bondingCurve: string,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -495,12 +495,19 @@ export class Market extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<string>;
 
-    totalBalance(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {
+    Approval(
+      owner?: string | null,
+      spender?: string | null,
+      value?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { owner: string; spender: string; value: BigNumber }
+    >;
+
     Buy(
       buyer?: string | null,
       poolBalance?: null,
@@ -567,6 +574,15 @@ export class Market extends BaseContract {
         eth: BigNumber;
       }
     >;
+
+    Transfer(
+      from?: string | null,
+      to?: string | null,
+      value?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { from: string; to: string; value: BigNumber }
+    >;
   };
 
   estimateGas: {
@@ -586,6 +602,8 @@ export class Market extends BaseContract {
       arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -611,7 +629,7 @@ export class Market extends BaseContract {
 
     initialize(
       _name: string,
-      _symbol: string,
+      _URI: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -651,8 +669,6 @@ export class Market extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<BigNumber>;
 
-    totalBalance(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
@@ -671,6 +687,11 @@ export class Market extends BaseContract {
     addressToCuratedLayerIndex(
       arg0: string,
       arg1: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    balanceOf(
+      arg0: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -701,7 +722,7 @@ export class Market extends BaseContract {
 
     initialize(
       _name: string,
-      _symbol: string,
+      _URI: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -749,11 +770,6 @@ export class Market extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    totalBalance(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
 
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };

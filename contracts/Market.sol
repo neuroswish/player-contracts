@@ -20,17 +20,19 @@ contract Market is ReentrancyGuardUpgradeable {
     // ======== Continuous token params ========
     string public name; // market name
     string public symbol; // market token symbol
-    uint256 public totalSupply; // total supply of tokens in circulation
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm; // ppm units
     uint256 public poolBalance; // ETH balance in contract pool
     uint256 public feePct; // percentage fee of buy amount distributed to beneficiaries (10**17)
     uint256 public pctBase; // 10**18
+    uint256 public totalSupply; // total supply of tokens in circulation
+    mapping(address => uint256) public balanceOf; // mapping of an address to that user's total token balance for this contract
+    // mapping(address => uint256) public redeemable;
+    //mapping(address => mapping(address => uint256)) public allowance;
 
     // ======== Player params ========
     address[] public curators; // addresses of active curators
     mapping(address => uint256) public rewards; // mapping from curator to their proportional reward amount for curating
-    mapping(address => uint256) public totalBalance; // mapping of an address to that user's total token balance for this contract
     mapping(address => bool) public isCurating; // mapping of an address to bool representing whether address is currently staking
     mapping(address => mapping(uint256 => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is staking a layer
 
@@ -70,19 +72,27 @@ contract Market is ReentrancyGuardUpgradeable {
     event RewardsAdded(uint256 totalRewardAmount);
     event RewardClaimed(address indexed beneficiary);
 
+    // ERC20 Events
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+
     // ======== Modifiers ========
     /**
      * @notice Check to see if address holds tokens
      */
     modifier holder(address user) {
-        require(totalBalance[user] > 0, "MUST HOLD TOKENS");
+        require(balanceOf[user] > 0, "MUST HOLD TOKENS");
         _;
     }
 
     // ======== Initializer for new market proxy ========
     function initialize(
         string calldata _name,
-        string calldata _symbol,
+        string calldata _URI,
         address _bondingCurve
     ) public payable initializer {
         reserveRatio = 333333;
@@ -90,8 +100,13 @@ contract Market is ReentrancyGuardUpgradeable {
         feePct = 10**17;
         pctBase = 10**18;
         name = _name;
-        symbol = _symbol;
+        //symbol = _symbol;
         bondingCurve = _bondingCurve;
+        Layer memory layer;
+        layer.creator = msg.sender;
+        layer.URI = _URI;
+        layers.push(layer);
+        layerIndex++;
         __ReentrancyGuard_init();
     }
 
@@ -128,8 +143,9 @@ contract Market is ReentrancyGuardUpgradeable {
                 );
             require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
         }
-        totalSupply += tokensReturned;
-        totalBalance[msg.sender] += tokensReturned;
+        _mint(msg.sender, tokensReturned);
+        // totalSupply += tokensReturned;
+        // balanceOf[msg.sender] += tokensReturned;
         poolBalance += value;
         emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, value);
         calculateRewards(reward);
@@ -144,7 +160,7 @@ contract Market is ReentrancyGuardUpgradeable {
         for (uint256 i; i < curators.length; i++) {
             address beneficiary = curators[i];
             uint256 reward = _totalRewardAmount *
-                (totalBalance[beneficiary] / totalSupply);
+                (balanceOf[beneficiary] / totalSupply);
             rewards[beneficiary] += reward;
         }
         emit RewardsAdded(_totalRewardAmount);
@@ -161,7 +177,7 @@ contract Market is ReentrancyGuardUpgradeable {
         returns (bool)
     {
         require(
-            _tokens > 0 && _tokens <= totalBalance[msg.sender],
+            _tokens > 0 && _tokens <= balanceOf[msg.sender],
             "INVALID TOKEN AMT"
         );
         require(poolBalance > 0, "PB<0");
@@ -173,12 +189,13 @@ contract Market is ReentrancyGuardUpgradeable {
             _tokens
         );
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
+        _burn(msg.sender, _tokens);
+        // totalSupply -= _tokens;
+        // balanceOf[msg.sender] -= _tokens;
         poolBalance -= ethReturned;
-        totalSupply -= _tokens;
-        totalBalance[msg.sender] -= _tokens;
-        sendValue(msg.sender, ethReturned);
+        sendValue(payable(msg.sender), ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
-        if (totalBalance[msg.sender] == 0) {
+        if (balanceOf[msg.sender] == 0) {
             for (uint256 i; i < curators.length; i++) {
                 if (curators[i] == msg.sender) {
                     curators[i] = curators[curators.length - 1];
@@ -207,6 +224,20 @@ contract Market is ReentrancyGuardUpgradeable {
         emit LayerAdded(msg.sender, _URI, layerIndex);
         return true;
     }
+
+    // function stake(uint256 _tokens) public holder(msg.sender) returns (bool) {
+    //     _approve(msg.sender, address(this), _tokens);
+    //     _transferFrom(msg.sender, address(this), _tokens);
+    //     redeemable[msg.sender] += _tokens;
+    //     return true;
+    // }
+
+    // function redeem(uint256 _tokens) public nonReentrant returns (bool) {
+    //     require(_tokens > 0, "INVALID");
+    //     require(redeemable[msg.sender] >= _tokens);
+    // }
+
+    // have buyers stake
 
     /**
      * @notice Curate a layer to the information market by specifying the layer index
@@ -279,7 +310,7 @@ contract Market is ReentrancyGuardUpgradeable {
         returns (bool)
     {
         require(rewards[_beneficiary] > 0, "NO REWARDS");
-        sendValue(_beneficiary, rewards[_beneficiary]);
+        sendValue(payable(_beneficiary), rewards[_beneficiary]);
         rewards[_beneficiary] = 0;
         emit RewardClaimed(_beneficiary);
         return true;
@@ -301,4 +332,65 @@ contract Market is ReentrancyGuardUpgradeable {
         (bool success, ) = payable(recipient).call{value: amount}("REVERTED");
         require(success);
     }
+
+    function _mint(address _to, uint256 _value) private {
+        totalSupply = totalSupply + _value;
+        balanceOf[_to] = balanceOf[_to] + _value;
+        emit Transfer(address(0), _to, _value);
+    }
+
+    function _burn(address _from, uint256 _value) private {
+        balanceOf[_from] = balanceOf[_from] - _value;
+        totalSupply = totalSupply - _value;
+        emit Transfer(_from, address(0), _value);
+    }
+
+    // function _approve(
+    //     address _owner,
+    //     address _spender,
+    //     uint256 _value
+    // ) private {
+    //     allowance[_owner][_spender] = _value;
+    //     emit Approval(_owner, _spender, _value);
+    // }
+
+    // function _transfer(
+    //     address _from,
+    //     address _to,
+    //     uint256 _value
+    // ) private {
+    //     balanceOf[_from] = balanceOf[_from] - _value;
+    //     balanceOf[_to] = balanceOf[_to] + _value;
+    //     emit Transfer(_from, _to, _value);
+    // }
+
+    // function _transferFrom(
+    //     address _from,
+    //     address _to,
+    //     uint256 _value
+    // ) private returns (bool) {
+    //     allowance[_from][_to] -= _value;
+    //     _transfer(_from, _to, _value);
+    //     return true;
+    // }
+
+    // function approve(address _spender, uint256 _value) external returns (bool) {
+    //     _approve(msg.sender, _spender, _value);
+    //     return true;
+    // }
+
+    // function transfer(address _to, uint256 _value) external returns (bool) {
+    //     _transfer(msg.sender, _to, _value);
+    //     return true;
+    // }
+
+    // function transferFrom(
+    //     address _from,
+    //     address _to,
+    //     uint256 _value
+    // ) external returns (bool) {
+    //     allowance[_from][msg.sender] = allowance[_from][msg.sender] - _value;
+    //     _transfer(_from, _to, _value);
+    //     return true;
+    // }
 }

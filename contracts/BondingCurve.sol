@@ -95,12 +95,12 @@ contract BondingCurve is Power {
 
     function calculateInitializationReturn(uint256 _price, uint32 _reserveRatio)
         public
+        view
         returns (uint256)
     {
         if (_reserveRatio == maxRatio) {
             return (_price * slopeFactor);
         }
-        init();
         (uint256 temp, uint256 precision) = powerInitial(
             (_price * slopeFactor),
             _reserveRatio,

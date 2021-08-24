@@ -121,7 +121,7 @@ contract Power {
         maxExpArray[127] = 0x00857ddf0117efa215952912839f6473e6;
     }
 
-    function init() internal {
+    constructor() {
         initMaxExpArray();
     }
 

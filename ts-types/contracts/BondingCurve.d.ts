@@ -123,8 +123,8 @@ export class BondingCurve extends BaseContract {
     calculateInitializationReturn(
       _price: BigNumberish,
       _reserveRatio: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     calculatePurchaseReturn(
       _supply: BigNumberish,
@@ -154,8 +154,8 @@ export class BondingCurve extends BaseContract {
   calculateInitializationReturn(
     _price: BigNumberish,
     _reserveRatio: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   calculatePurchaseReturn(
     _supply: BigNumberish,
@@ -217,7 +217,7 @@ export class BondingCurve extends BaseContract {
     calculateInitializationReturn(
       _price: BigNumberish,
       _reserveRatio: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     calculatePurchaseReturn(
@@ -249,7 +249,7 @@ export class BondingCurve extends BaseContract {
     calculateInitializationReturn(
       _price: BigNumberish,
       _reserveRatio: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     calculatePurchaseReturn(

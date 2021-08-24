@@ -36,10 +36,6 @@ declare module "hardhat/types/runtime" {
       name: "Power",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Power__factory>;
-    getContractFactory(
-      name: "PowerOptimized",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.PowerOptimized__factory>;
 
     // default types
     getContractFactory(
