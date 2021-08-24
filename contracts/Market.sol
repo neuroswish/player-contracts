@@ -8,7 +8,7 @@ import "./interfaces/IBondingCurve.sol";
  * @title Market
  * @author neuroswish
  *
- * Implement information markets
+ * Multiplayer cryptomedia
  *
  * "All of you Mario, it's all a game"
  */
@@ -27,15 +27,14 @@ contract Market is ReentrancyGuardUpgradeable {
     uint256 public pctBase; // 10**18
     uint256 public totalSupply; // total supply of tokens in circulation
     mapping(address => uint256) public balanceOf; // mapping of an address to that user's total token balance for this contract
-    // mapping(address => uint256) public redeemable;
-    //mapping(address => mapping(address => uint256)) public allowance;
 
     // ======== Player params ========
     address[] public curators; // addresses of active curators
     mapping(address => uint256) public rewards; // mapping from curator to their proportional reward amount for curating
-    mapping(address => bool) public isCurating; // mapping of an address to bool representing whether address is currently staking
-    mapping(address => mapping(uint256 => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is staking a layer
-
+    mapping(address => bool) public isCurating; // mapping of an address to bool representing whether address is currently curating
+    mapping(address => bool) public hasCreated; // mapping of an address to bool representing whether address has already added a layer
+    mapping(address => mapping(Layer => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer
+    mapping(address => uint256) public addressToCuratedLayerCount;
     // ======== Layer params ========
     struct Layer {
         address creator; // layer creator
@@ -43,8 +42,8 @@ contract Market is ReentrancyGuardUpgradeable {
         address[] curators; // addresses curating this layer
     }
     Layer[] public layers; // array of all layers
-    mapping(address => uint256[]) public addressToCuratedLayerIndex; // mapping from a curator address to layer index staked by that address
-    mapping(address => uint256[]) public addressToCreatedLayerIndex; // mapping from a curator address to layer index staked by that address
+    mapping(address => Layer) public addressToLayer; // mapping from an address to the layer the address has created
+    mapping(address => Layer[]) public addressToCuratedLayers; // mapping from an address to layer index staked by that address
     uint256 layerIndex = 0; // initialize layerIndex (foundational layer will have an index of 0)
 
     // ======== Events ========
@@ -67,8 +66,8 @@ contract Market is ReentrancyGuardUpgradeable {
         string contentURI,
         uint256 layerIndex
     );
-    event Curated(address indexed curator, uint256 layerIndex);
-    event Removed(address indexed curator, uint256 layerIndex);
+    event Curated(address indexed curator, address indexed layerCreator);
+    event Removed(address indexed curator, address indexed layerCreator);
     event RewardsAdded(uint256 totalRewardAmount);
     event RewardClaimed(address indexed beneficiary);
 
@@ -90,23 +89,17 @@ contract Market is ReentrancyGuardUpgradeable {
     }
 
     // ======== Initializer for new market proxy ========
-    function initialize(
-        string calldata _name,
-        string calldata _URI,
-        address _bondingCurve
-    ) public payable initializer {
+    function initialize(string calldata _name, address _bondingCurve)
+        public
+        payable
+        initializer
+    {
         reserveRatio = 333333;
         ppm = 1000000;
         feePct = 10**17;
         pctBase = 10**18;
         name = _name;
-        //symbol = _symbol;
         bondingCurve = _bondingCurve;
-        Layer memory layer;
-        layer.creator = msg.sender;
-        layer.URI = _URI;
-        layers.push(layer);
-        layerIndex++;
         __ReentrancyGuard_init();
     }
 
@@ -144,8 +137,6 @@ contract Market is ReentrancyGuardUpgradeable {
             require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
         }
         _mint(msg.sender, tokensReturned);
-        // totalSupply += tokensReturned;
-        // balanceOf[msg.sender] += tokensReturned;
         poolBalance += value;
         emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, value);
         calculateRewards(reward);
@@ -190,8 +181,6 @@ contract Market is ReentrancyGuardUpgradeable {
         );
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
         _burn(msg.sender, _tokens);
-        // totalSupply -= _tokens;
-        // balanceOf[msg.sender] -= _tokens;
         poolBalance -= ethReturned;
         sendValue(payable(msg.sender), ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
@@ -215,48 +204,35 @@ contract Market is ReentrancyGuardUpgradeable {
         holder(msg.sender)
         returns (bool)
     {
+        if (hasCreated[msg.sender]) {
+            revert("ALREADY CREATED");
+        }
         Layer memory layer;
         layer.URI = _URI;
         layer.creator = msg.sender;
         layers[layerIndex] = layer;
-        addressToCreatedLayerIndex[msg.sender].push(layerIndex);
         layerIndex++;
+        hasCreated[msg.sender] = true;
+        addressToLayer[msg.sender] = layer;
         emit LayerAdded(msg.sender, _URI, layerIndex);
         return true;
     }
-
-    // function stake(uint256 _tokens) public holder(msg.sender) returns (bool) {
-    //     _approve(msg.sender, address(this), _tokens);
-    //     _transferFrom(msg.sender, address(this), _tokens);
-    //     redeemable[msg.sender] += _tokens;
-    //     return true;
-    // }
-
-    // function redeem(uint256 _tokens) public nonReentrant returns (bool) {
-    //     require(_tokens > 0, "INVALID");
-    //     require(redeemable[msg.sender] >= _tokens);
-    // }
-
-    // have buyers stake
 
     /**
      * @notice Curate a layer to the information market by specifying the layer index
      * @dev Emits a Curated event upon success; callable by token holders
      */
-    function curate(uint256 _layerIndex)
-        public
-        holder(msg.sender)
-        returns (bool)
-    {
-        if (isCuratingLayer[msg.sender][_layerIndex]) {
+    function curate(uint256 _creator) public holder(msg.sender) returns (bool) {
+        Layer memory layer = addressToLayer[_creator];
+        if (isCuratingLayer[msg.sender][layer]) {
             revert("CURATED");
         } else {
-            addressToCuratedLayerIndex[msg.sender].push(_layerIndex);
+            addressToCuratedLayers[msg.sender].push(layer);
             if (!isCurating[msg.sender]) {
                 isCurating[msg.sender] = true;
                 curators.push(msg.sender);
             }
-            emit Curated(msg.sender, _layerIndex);
+            emit Curated(msg.sender, _creator);
             return true;
         }
     }
@@ -265,29 +241,24 @@ contract Market is ReentrancyGuardUpgradeable {
      * @notice Remove a curation from a layer in the information market by specifying the layer index
      * @dev Emits a Removed event upon success; callable by token holders, will revert if holder is not currently curating the layer
      */
-    function removeCuration(uint256 _layerIndex)
+    function removeCuration(uint256 _creator)
         public
         holder(msg.sender)
         returns (bool)
     {
-        if (!isCuratingLayer[msg.sender][_layerIndex]) {
-            revert("NOT CURATED");
+        Layer memory layer = addressToLayer[_creator];
+        if (isCuratingLayer[msg.sender][layer]) {
+            revert("CURATED");
         }
-        for (
-            uint256 i;
-            i < addressToCuratedLayerIndex[msg.sender].length;
-            i++
-        ) {
-            if (addressToCuratedLayerIndex[msg.sender][i] == _layerIndex) {
-                addressToCuratedLayerIndex[msg.sender][
-                    i
-                ] = addressToCuratedLayerIndex[msg.sender][
-                    addressToCuratedLayerIndex[msg.sender].length - 1
-                ];
-                addressToCuratedLayerIndex[msg.sender].pop();
+        uint256 curatorsLength = layer.curators.length;
+        for (uint256 i; i < curatorsLength; i++) {
+            if (msg.sender == layer.curators[i]) {
+                layer.curators[i] = layer.curators[curatorsLength - 1];
+                layer.curators.pop();
             }
         }
-        if (addressToCuratedLayerIndex[msg.sender].length == 0) {
+        addressToCuratedLayerCount--;
+        if (addressToCuratedLayerCount[msg.sender] == 0) {
             isCurating[msg.sender] = false;
             for (uint256 i; i < curators.length; i++) {
                 if (curators[i] == msg.sender) {
@@ -296,7 +267,7 @@ contract Market is ReentrancyGuardUpgradeable {
                 }
             }
         }
-        emit Removed(msg.sender, _layerIndex);
+        emit Removed(msg.sender, _creator);
         return true;
     }
 
@@ -344,53 +315,4 @@ contract Market is ReentrancyGuardUpgradeable {
         totalSupply = totalSupply - _value;
         emit Transfer(_from, address(0), _value);
     }
-
-    // function _approve(
-    //     address _owner,
-    //     address _spender,
-    //     uint256 _value
-    // ) private {
-    //     allowance[_owner][_spender] = _value;
-    //     emit Approval(_owner, _spender, _value);
-    // }
-
-    // function _transfer(
-    //     address _from,
-    //     address _to,
-    //     uint256 _value
-    // ) private {
-    //     balanceOf[_from] = balanceOf[_from] - _value;
-    //     balanceOf[_to] = balanceOf[_to] + _value;
-    //     emit Transfer(_from, _to, _value);
-    // }
-
-    // function _transferFrom(
-    //     address _from,
-    //     address _to,
-    //     uint256 _value
-    // ) private returns (bool) {
-    //     allowance[_from][_to] -= _value;
-    //     _transfer(_from, _to, _value);
-    //     return true;
-    // }
-
-    // function approve(address _spender, uint256 _value) external returns (bool) {
-    //     _approve(msg.sender, _spender, _value);
-    //     return true;
-    // }
-
-    // function transfer(address _to, uint256 _value) external returns (bool) {
-    //     _transfer(msg.sender, _to, _value);
-    //     return true;
-    // }
-
-    // function transferFrom(
-    //     address _from,
-    //     address _to,
-    //     uint256 _value
-    // ) external returns (bool) {
-    //     allowance[_from][msg.sender] = allowance[_from][msg.sender] - _value;
-    //     _transfer(_from, _to, _value);
-    //     return true;
-    // }
 }
