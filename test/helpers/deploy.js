@@ -5,59 +5,58 @@ async function deploy(name, args = []) {
   return contract.deployed();
 }
 
-// GET MARKET CONTRACT FROM MARKET FACTORY EVENT LOGS
-async function getMarketContractFromEventLogs(
+// GET CRYPTOMEDIA CONTRACT FROM CRYPTOMEDIA FACTORY EVENT LOGS
+async function getCryptomediaContractFromEventLogs(
   provider,
   factory,
   signer,
 ) {
-  // get logs emitted from Market Factory
+  // get logs emitted from Cryptomedia Factory
   const logs = await provider.getLogs({ address: factory.address });
 
   // parse events from logs
-  const MarketFactory = await ethers.getContractFactory('MarketFactory');
-  const events = logs.map((log) => MarketFactory.interface.parseLog(log));
+  const CryptomediaFactory = await ethers.getContractFactory('CryptomediaFactory');
+  const events = logs.map((log) => CryptomediaFactory.interface.parseLog(log));
 
-  // extract market clone address from marketDeployed log
-  const marketCloneAddress = events[0]['args'][0];
+  // extract cryptomedia clone address from CryptomediaDeployed log
+  const cryptomediaCloneAddress = events[0]['args'][0];
 
-  // create new instance of contract with Market Logic interface + market proxy address
-  const Market = await ethers.getContractFactory('Market');
-  const market = new ethers.Contract(
-    marketCloneAddress,
-    Market.interface,
+  // create new instance of contract with Cryptomedia Logic interface + cryptomedia proxy address
+  const Cryptomedia = await ethers.getContractFactory('Cryptomedia');
+  const cryptomedia = new ethers.Contract(
+    cryptomediaCloneAddress,
+    Cryptomedia.interface,
     signer,
   );
-  return market;
+  return cryptomedia;
 }
 
 async function deployTestContractSetup(
   name,
-  symbol,
   provider,
   signer,
 ) {
   
-  // DEPLOY MARKET FACTORY
+  // DEPLOY CRYPTOMEDIA FACTORY
   const bondingCurve = await deploy('BondingCurve');
-  const MarketFactory = await deploy('MarketFactory', [bondingCurve.address]);
+  const CryptomediaFactory = await deploy('CryptomediaFactory', [bondingCurve.address]);
 
   //create new factory instance
-  const factory = new ethers.Contract(MarketFactory.address, MarketFactory.interface, signer);
-  await factory.createMarket(name, symbol);
-  const market = await getMarketContractFromEventLogs(provider, factory, signer);
+  const factory = new ethers.Contract(CryptomediaFactory.address, CryptomediaFactory.interface, signer);
+  await factory.createCryptomedia(name);
+  const cryptomedia = await getCryptomediaContractFromEventLogs(provider, factory, signer);
 
-  const deployment = await factory.createMarket(name, symbol);
+  const deployment = await factory.createCryptomedia(name);
   const receipt = await deployment.wait();
   const gasUsed = receipt.gasUsed;
   return {
-    market, gasUsed
+    cryptomedia, gasUsed
   };
 }
 
 
 module.exports = {
 deployTestContractSetup,
-getMarketContractFromEventLogs,
+getCryptomediaContractFromEventLogs,
 };
 

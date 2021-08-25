@@ -17,6 +17,14 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BondingCurve__factory>;
     getContractFactory(
+      name: "Cryptomedia",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Cryptomedia__factory>;
+    getContractFactory(
+      name: "CryptomediaFactory",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.CryptomediaFactory__factory>;
+    getContractFactory(
       name: "Greeter",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Greeter__factory>;
@@ -24,14 +32,6 @@ declare module "hardhat/types/runtime" {
       name: "IBondingCurve",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBondingCurve__factory>;
-    getContractFactory(
-      name: "Market",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Market__factory>;
-    getContractFactory(
-      name: "MarketFactory",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.MarketFactory__factory>;
     getContractFactory(
       name: "Power",
       signerOrOptions?: ethers.Signer | FactoryOptions
