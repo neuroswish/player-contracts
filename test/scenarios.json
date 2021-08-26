@@ -1,13 +1,12 @@
 {
   "scenarios": [
     {
-      "ethContributed": "7.342",
-      "tokensReturned": "1.2",
-      "initialSupply": "0",
-      "finalSupply": "2141",
-      "initialPoolBalance": "0",
-      "finalPoolBalance": "0",
-      "rewards": "0"
+      "initialEthContributed": "7.342",
+      "initializedPoolBalance": "7.342",
+      "initializedTotalSupply": "129988338",
+      "ethContributed": "0.789",
+      "resultingPoolBalance": "8.131",
+      "resultingTotalSupply": "134487184"
     }
   ]
 }

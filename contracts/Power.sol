@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
+/**
+ * @title Power
+ *
+ * Functions to calculate fractional exponents
+ *
+ * "No one man should have all that power, the clock's tickin' I just count the hours"
+ */
+
 contract Power {
     uint256 private constant ONE = 1;
     uint32 private constant MAX_WEIGHT = 1000000;
@@ -144,29 +152,6 @@ contract Power {
      *     Since we rely on unsigned-integer arithmetic and "base < 1" ==> "log(base) < 0", this function does not support "_baseN < _baseD".
      */
 
-    // function power(
-    //     uint256 _baseN,
-    //     uint256 _baseD,
-    //     uint32 _expN,
-    //     uint32 _expD
-    // ) internal view returns (uint256, uint8) {
-    //     require(_baseN < MAX_NUM);
-
-    //     uint256 baseLog;
-    //     uint256 base = (_baseN * FIXED_1) / _baseD;
-    //     baseLog = generalLog(base);
-
-    //     uint256 baseLogTimesExp = (baseLog * _expN) / _expD;
-    //     uint8 precision = findPositionInMaxExpArray(baseLogTimesExp);
-    //     return (
-    //         generalExp(
-    //             baseLogTimesExp >> (MAX_PRECISION - precision),
-    //             precision
-    //         ),
-    //         precision
-    //     );
-    // }
-
     function power(
         uint256 _baseN,
         uint256 _baseD,
@@ -229,14 +214,6 @@ contract Power {
                 precision
             );
         }
-        // uint8 precision = findPositionInMaxExpArray(baseLogTimesExp);
-        // return (
-        //     generalExp(
-        //         baseLogTimesExp >> (MAX_PRECISION - precision),
-        //         precision
-        //     ),
-        //     precision
-        // );
     }
 
     /**

@@ -19,7 +19,6 @@ describe("Deploy new cryptomedia via clone proxy from Cryptomedia Factory", asyn
     const contract = await(deployTestContractSetup(NAME, provider, creator));
     cryptomedia = contract.cryptomedia
     deploymentGas = contract.gasUsed;
-    console.log(deploymentGas);
   });
 
   it('Cryptomedia has been initialized', async() => {

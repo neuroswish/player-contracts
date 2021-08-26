@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
  *
  * Factory for deploying new cryptomedia
  *
- * "No one man should have all that power, the clock's tickin' I just count the hours"
+ * "Good morning, look at the valedictorian. Scared of the future while I hop in the DeLorean"
  */
 
 contract CryptomediaFactory {

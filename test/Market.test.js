@@ -23,53 +23,53 @@ describe("New Market contract is deployed through Cryptomedia Factory", async ()
   });
 
   describe("Interacting with cryptomedia", async() => {
+    // scenarios tested using wolfram
     describe("scenarios", () => {
       let slippageTokens = 1;
       let slippageEth = 1;
       for(let i=0; i<scenarios.length; i++) {
         const {
+          initialEthContributed,
+          initializedPoolBalance,
+          initializedTotalSupply,
           ethContributed,
-          tokensReturned,
-          initialSupply,
-          finalSupply,
-          initialPoolBalance,
-          finalPoolBalance,
-          rewards
+          resultingPoolBalance,
+          resultingTotalSupply
         } = scenarios[i];
 
         // test changes to pool balance and total supply when supply is initialized
-        describe(`signer 1 initialized the market supply with ${ethContributed} ETH`, async () => {
+        describe(`signer 1 initialized the market supply with ${initialEthContributed} ETH`, async () => {
           // this is gonna run before each of the the test blocks below
-          beforeEach(async() => {
-            await cryptomedia.connect(signer1).buy(ethers.utils.parseEther(ethContributed), slippageTokens, {
-              value: ethers.utils.parseEther(ethContributed)
+          before(async() => {
+            await cryptomedia.connect(signer1).buy(ethers.utils.parseEther(initialEthContributed), slippageTokens, {
+              value: ethers.utils.parseEther(initialEthContributed)
             });
           });
-          it("It increased the market's pool balance", async() => {
-            const newPoolBalance = await cryptomedia.poolBalance();
-            expect(newPoolBalance.toString()).eq(ethers.utils.parseEther(ethContributed).toString());
+          it("it increased the market's pool balance", async() => {
+            const initialPoolBalance = await cryptomedia.poolBalance();
+            expect(initialPoolBalance.toString()).eq(ethers.utils.parseEther(initializedPoolBalance).toString());
           });
 
-          it("And increased the market's total token supply in circulation", async() => {
-            const tokenSupply = await cryptomedia.totalSupply();
-            expect(tokenSupply.toString()).eq(finalSupply);
+          it("and increased the market's total token supply in circulation", async() => {
+            const initialTokenSupply = await cryptomedia.totalSupply();
+            expect(initialTokenSupply.toString()).eq(initializedTotalSupply);
           });
 
           // test layer actions
           describe(`signer2 then contributed ${ethContributed} ETH`, () => {
-            beforeEach(async() => {
+            before(async() => {
               await cryptomedia.connect(signer2).buy(ethers.utils.parseEther(ethContributed), slippageTokens, {
                 value: ethers.utils.parseEther(ethContributed)
               });
             });
             it("it increased the market's pool balance", async() => {
-              const newPoolBalance = await cryptomedia.poolBalance();
-              expect(newPoolBalance.toString()).eq(ethers.utils.parseEther(ethContributed).toString());
+              const resultPoolBalance = await cryptomedia.poolBalance();
+              expect(resultPoolBalance.toString()).eq(ethers.utils.parseEther(resultingPoolBalance).toString());
             });
 
             it("and increased the market's total token supply in circulation", async() => {
-              const tokenSupply = await cryptomedia.totalSupply();
-              expect(tokenSupply.toString()).eq(finalSupply);
+              const resultTotalSupply = await cryptomedia.totalSupply();
+              expect(resultTotalSupply.toString()).eq(resultingTotalSupply);
             });
 
             it("signer1 can add a layer to the collection", async() => {
