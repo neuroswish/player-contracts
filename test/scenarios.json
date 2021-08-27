@@ -1,12 +1,27 @@
 {
   "scenarios": [
     {
-      "initialEthContributed": "7.342",
-      "initializedPoolBalance": "7.342",
-      "initializedTotalSupply": "129988338",
-      "ethContributed": "0.789",
-      "resultingPoolBalance": "8.131",
-      "resultingTotalSupply": "134487184"
+      "firstEthContributed": "7.342",
+      "firstSlippageShouldNotRevert": 129988337,
+      "firstPoolBalance": "7.342",
+      "firstTotalSupply": "129988338",
+      "signer1Balance": "129988338",
+      "secondEthContributed": "0.789",
+      "signer2SlippageShouldRevert": 4498847,
+      "signer2SlippageShouldNotRevert": 4498845,
+      "secondPoolBalance": "8.131",
+      "secondTotalSupply": "134487184",
+      "signer2Balance": "4498846",
+      "thirdEthContributed": "2.196",
+      "signer3SlippageShouldNotRevert": 11156258,
+      "thirdPoolBalance": "10.327",
+      "thirdTotalSupply": "145643443",
+      "signer3Balance": "11156259",
+      "sellAmount": "1000000",
+      "sellSlippage": "1",
+      "poolBalancePostSell": "10115738864306645355",
+      "totalSupplyPostSell": "144643443",
+      "signerBalancePostSell": "3498846"
     }
   ]
 }

@@ -7,7 +7,7 @@ const { deployTestContractSetup } = require("./helpers/deploy");
 const { NAME } = require('./helpers/constants');
 
 
-describe("Deploy new cryptomedia via clone proxy from Cryptomedia Factory", async () => {
+describe("Deploy new Cryptomedia via clone proxy from Cryptomedia Factory", async () => {
   let cryptomedia, signer, creator, deploymentGas;
 
   // runs before all tests in this file, regardless of line placement

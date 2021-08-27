@@ -16,18 +16,17 @@ contract BondingCurve is Power {
     uint256 public constant slopeFactor = 100000;
 
     /**
-     * @dev given a token supply, reserve balance, weight and a deposit amount (in the reserve token),
-     * calculates the target amount for a given conversion (in the main token)
+     * @dev given total supply, pool balance, reserve ratio and a price, calculates the number of tokens returned
      *
      * Formula:
-     * return = _supply * ((1 + _amount / _reserveBalance) ^ (_reserveWeight / 1000000) - 1)
+     * return = _supply * ((1 + _price / _poolBalance) ^ (_reserveRatio / maxRatio) - 1)
      *
      * @param _supply          liquid token supply
      * @param _poolBalance  reserve balance
      * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)
      * @param _price          amount of reserve tokens to get the target amount for
      *
-     * @return target
+     * @return tokens
      */
     function calculatePurchaseReturn(
         uint256 _supply,
@@ -50,11 +49,10 @@ contract BondingCurve is Power {
     }
 
     /**
-     * @dev given a token supply, reserve balance, weight and a sell amount (in the main token),
-     * calculates the target amount for a given conversion (in the reserve token)
+     * @dev given total supply, pool balance, reserve ratio and a token amount, calculates the amount of ETH returned
      *
      * Formula:
-     * return = _reserveBalance * (1 - (1 - _amount / _supply) ^ (1000000 / _reserveWeight))
+     * return = _poolBalance * (1 - (1 - _price / _supply) ^ (maxRatio / _reserveRatio))
      *
      * @param _supply          liquid token supply
      * @param _poolBalance  reserve balance
@@ -89,11 +87,10 @@ contract BondingCurve is Power {
     }
 
     /**
-     * @dev given a price, reserve ratio, and slope value,
-     * calculates the token return when initializing the bonding curve supply
+     * @dev given a price, reserve ratio, and slope factor, calculates the number of tokens returned when initializing the bonding curve supply
      *
      * Formula:
-     * return = (_price / (_reserveRatio * _slope)) ** _reserveRatio
+     * return = (_price / (_reserveRatio * _slopeFactor)) ** _reserveRatio
      *
      * @param _price          liquid token supply
      * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)

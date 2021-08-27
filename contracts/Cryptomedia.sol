@@ -20,14 +20,14 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     // ======== Continuous token params ========
     string public name; // cryptomedia name
     uint32 public reserveRatio; // reserve ratio in ppm
-    uint32 public ppm; // ppm units
+    uint32 public ppm; // token units
     uint256 public poolBalance; // ETH balance in contract pool
     uint256 public totalSupply; // total supply of tokens in circulation
     mapping(address => uint256) public balanceOf; // mapping of an address to that user's total token balance for this contract
 
     // ======== Player params ========
-    mapping(address => bool) public created; // mapping of an address to bool representing whether address has already added a layer
-    mapping(address => mapping(address => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer
+    mapping(address => bool) public created; // mapping of an address to bool representing whether address has created a layer
+    mapping(address => mapping(address => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer (the nested address is the layer creator)
 
     // ======== Layer params ========
     struct Layer {
@@ -200,10 +200,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Send ETH in a safe manner
      * @dev Prevents reentrancy, emits a Transfer event upon success
      */
-    function sendValue(address recipient, uint256 amount)
-        internal
-        nonReentrant
-    {
+    function sendValue(address recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "INVALID AMT");
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
