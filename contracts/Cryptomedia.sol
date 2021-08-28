@@ -142,6 +142,12 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
         // burn tokens
         _burn(msg.sender, _tokens);
+        if (balanceOf[msg.sender] == 0) {
+            Layer memory layer;
+            addressToLayer[msg.sender] = layer;
+            created[msg.sender] = false;
+            emit LayerRemoved(msg.sender);
+        }
         poolBalance -= ethReturned;
         sendValue(payable(msg.sender), ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
