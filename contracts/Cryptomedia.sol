@@ -27,14 +27,14 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
 
     // ======== Player params ========
     mapping(address => bool) public created; // mapping of an address to bool representing whether address has created a layer
-    mapping(address => mapping(address => bool)) public isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer (the nested address is the layer creator)
+    mapping(address => mapping(address => bool)) private isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer (the nested address is the layer creator)
 
     // ======== Layer params ========
     struct Layer {
         address creator; // layer creator
         string URI; // layer content URI
     }
-    mapping(address => Layer) public addressToLayer; // mapping from an address to the layer the address has created
+    mapping(address => Layer) private addressToLayer; // mapping from an address to the layer the address has created
 
     // ======== Events ========
     event Buy(
@@ -59,6 +59,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         address indexed curator,
         address indexed layerCreator
     );
+    event noLongerHolder(address indexed user);
 
     // ======== Modifiers ========
     /**
@@ -143,14 +144,25 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         // burn tokens
         _burn(msg.sender, _tokens);
         if (balanceOf[msg.sender] == 0) {
-            Layer memory layer;
-            addressToLayer[msg.sender] = layer;
-            created[msg.sender] = false;
-            emit LayerRemoved(msg.sender);
+            removeHolder(msg.sender);
         }
         poolBalance -= ethReturned;
         sendValue(payable(msg.sender), ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
+    }
+
+    /**
+     * @notice If a holder sells all tokens, remove any layer created and all curations
+     * @dev Emits a noLongerHolder event upon success
+     */
+    function removeHolder(address _holder) private {
+        if (created[_holder]) {
+            Layer memory layer;
+            addressToLayer[_holder] = layer;
+            created[_holder] = false;
+            emit LayerRemoved(_holder);
+        }
+        emit noLongerHolder(_holder);
     }
 
     /**
@@ -198,6 +210,36 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         require(isCuratingLayer[msg.sender][_creator], "HAVE NOT CURATED");
         isCuratingLayer[msg.sender][_creator] = false;
         emit CurationRemoved(msg.sender, _creator);
+    }
+
+    // ============ Public helper functions ============
+
+    /**
+     * @notice Find whether an address is curating a layer
+     * @dev Must specify user address and layer creator address; protects against edge case in which user sells all tokens & all curations are removed
+     */
+    function isAddressCuratingLayer(address _user, address _layerCreator)
+        public
+        view
+        returns (bool)
+    {
+        if (balanceOf[_user] == 0) {
+            return false;
+        } else {
+            return isCuratingLayer[_user][_layerCreator];
+        }
+    }
+
+    /**
+     * @notice Return layer media URI given address of layer creator
+     * @dev Must specify user address and layer creator address; protects against edge case in which user sells all tokens & all curations are removed
+     */
+    function getLayerURI(address _layerCreator)
+        public
+        view
+        returns (string memory)
+    {
+        return addressToLayer[_layerCreator].URI;
     }
 
     // ============ Utility ============
