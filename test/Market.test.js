@@ -81,7 +81,7 @@ describe("New Cryptomedia is deployed through Cryptomedia Factory", async () => 
         
       });
 
-      // test layer actions
+      // test token exchange actions
       describe("Token-exchange actions work properly", async () => {
         before(async() => {
           await cryptomedia.connect(signer2).buy(ethers.utils.parseEther(secondEthContributed), signer2SlippageShouldNotRevert, {
@@ -142,54 +142,85 @@ describe("New Cryptomedia is deployed through Cryptomedia Factory", async () => 
       describe("Layer-creating actions work properly", () => {
 
         it("Token-holding address can add a layer to the collection", async() => {
-          await cryptomedia.connect(signer1).addLayer("www.verse.xyz");
+          await cryptomedia.connect(signer1).createLayer("www.verse.xyz");
           const created = await cryptomedia.created(signer1.address);
           expect(created).eq(true);
         });
 
+        it("Second token-holding address can add a layer to the collection", async() => {
+          await cryptomedia.connect(signer2).createLayer("www.verse.co");
+          const created = await cryptomedia.created(signer2.address);
+          expect(created).eq(true);
+        });
+
         it("Non-token-holding address cannot add a layer to the collection", async() => {
-          await expect(cryptomedia.connect(signer4).addLayer("www.verse.xyz")).to.be.revertedWith("MUST HOLD TOKENS");
+          await expect(cryptomedia.connect(signer4).createLayer("www.verse.xyz")).to.be.revertedWith("MUST HOLD TOKENS");
         });
 
         it("Creator cannot add a second layer to the collection", async() => {
-          await expect(cryptomedia.connect(signer1).addLayer("www.verse.xyz")).to.be.revertedWith("ALREADY CREATED");
+          await expect(cryptomedia.connect(signer1).createLayer("www.verse.xyz")).to.be.revertedWith("ALREADY CONTRIBUTED");
+        });
+
+        it("Creator can create another layer after removing the first", async() => {
+          await cryptomedia.connect(signer1).removeCreatedLayer();
+          const createdShouldBeFalse = await cryptomedia.created(signer1.address)
+          expect(createdShouldBeFalse).eq(false);
+          await cryptomedia.connect(signer1).createLayer("www.verse.com");
+          const createdShouldBeTrue = await cryptomedia.created(signer1.address);
+          expect(createdShouldBeTrue).eq(true);
+        });
+
+        it("Creator cannot create another layer in the collection", async() => {
+          await expect(cryptomedia.connect(signer1).createLayer("www.verse.io")).to.be.revertedWith("ALREADY CONTRIBUTED");
         });
 
         it("Creator can remove a created layer", async() => {
-          await cryptomedia.connect(signer1).removeLayer();
+          await cryptomedia.connect(signer1).removeCreatedLayer();
           const created = await cryptomedia.created(signer1.address);
           expect(created).eq(false);
         });
 
         it("Token-holding non-creator cannot remove a layer that has not been created yet", async() => {
-          await expect(cryptomedia.connect(signer2).removeLayer()).to.be.revertedWith("HAVE NOT CREATED");
+          await expect(cryptomedia.connect(signer3).removeCreatedLayer()).to.be.revertedWith("NOTHING TO REMOVE");
         });
       });
 
-      describe("Curating actions work properly", () => {
+      describe("Layer-curating actions work properly", () => {
        
         it("Token-holding address can curate a layer in the collection", async() => {
-          await cryptomedia.connect(signer3).curate(signer1.address);
-          const isCurating = await cryptomedia.isCuratingLayer(signer3.address, signer1.address);
-          expect(isCurating).eq(true);
+          await cryptomedia.connect(signer3).curateLayer(signer1.address);
+          const curated = await cryptomedia.curated(signer3.address);
+          expect(curated).eq(true);
+          const result = await cryptomedia.getLayer(signer3.address)
+          expect(result[0]).eq(signer1.address);
         });
 
         it("Token-holders cannot repeatedly curate a layer that they have already curated", async() => {
-          await expect(cryptomedia.connect(signer3).curate(signer1.address)).to.be.revertedWith("ALREADY CURATED");
+          await expect(cryptomedia.connect(signer3).curateLayer(signer1.address)).to.be.revertedWith("ALREADY CONTRIBUTED");
+        });
+
+        it("Curators cannot curate another layer before removing the first curation", async() => {
+          await expect(cryptomedia.connect(signer3).curateLayer(signer1.address)).to.be.revertedWith("ALREADY CONTRIBUTED");
         });
 
         it("Non-token-holding address cannot curate a layer in the collection", async() => {
-          await expect(cryptomedia.connect(signer4).curate(signer1.address)).to.be.revertedWith("MUST HOLD TOKENS");
+          await expect(cryptomedia.connect(signer4).curateLayer(signer1.address)).to.be.revertedWith("MUST HOLD TOKENS");
         });
 
         it("Curator can remove curation for a layer in the collection", async() => {
-          await cryptomedia.connect(signer3).removeCuration(signer1.address);
-          const isCurating = await cryptomedia.isCuratingLayer(signer3.address, signer1.address);
-          expect(isCurating).eq(false);
+          await cryptomedia.connect(signer3).removeCuratedLayer();
+          const curated = await cryptomedia.curated(signer3.address);
+          expect(curated).eq(false);
+        });
+
+        it("Curator can curate another layer after removing the first", async() => {
+          await cryptomedia.connect(signer3).curateLayer(signer2.address);
+          const curatedShouldBeTrue = await cryptomedia.curated(signer3.address);
+          expect(curatedShouldBeTrue).eq(true);
         });
 
         it("Token-holder cannot remove curation for a layer that he has not curated", async() => {
-          await expect(cryptomedia.connect(signer2).removeCuration(signer1.address)).to.be.revertedWith("HAVE NOT CURATED");
+          await expect(cryptomedia.connect(signer2).removeCuratedLayer()).to.be.revertedWith("NOTHING TO REMOVE");
         });
       });
     }
