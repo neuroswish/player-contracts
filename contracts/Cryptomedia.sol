@@ -27,14 +27,15 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
 
     // ======== Player params ========
     mapping(address => bool) public created; // mapping of an address to bool representing whether address has created a layer
-    mapping(address => mapping(address => bool)) private isCuratingLayer; // mapping of an address to mapping representing whether address is curating a layer (the nested address is the layer creator)
+    mapping(address => bool) public curated; // mapping of an address to bool representing whether address has curated a layer
 
     // ======== Layer params ========
     struct Layer {
         address creator; // layer creator
         string URI; // layer content URI
     }
-    mapping(address => Layer) private addressToLayer; // mapping from an address to the layer the address has created
+    mapping(address => Layer) private addressToCreatedLayer; // mapping from a creator's address to the layer the address has created
+    mapping(address => address) private addressToCuratedLayerAddress; // mapping from a curating address to the address of the layer's creator
 
     // ======== Events ========
     event Buy(
@@ -52,7 +53,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         uint256 eth
     );
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event LayerAdded(address indexed creator, string contentURI);
+    event LayerCreated(address indexed creator, string contentURI);
     event LayerRemoved(address indexed creator);
     event CurationAdded(address indexed curator, address indexed layerCreator);
     event CurationRemoved(
@@ -131,7 +132,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
             _tokens > 0 && _tokens <= balanceOf[msg.sender],
             "INVALID TOKEN AMT"
         );
-        require(poolBalance > 0, "PB<0");
+        require(poolBalance > 0, "PB < 0");
         require(_minETHReturned > 0, "INVALID SLIPPAGE");
         // calculate ETH returned
         uint256 ethReturned = IBondingCurve(bondingCurve).calculateSaleReturn(
@@ -152,15 +153,19 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice If a holder sells all tokens, remove any layer created and all curations
+     * @notice If a holder sells all tokens, remove any layer created or curation
      * @dev Emits a noLongerHolder event upon success
      */
     function removeHolder(address _holder) private {
         if (created[_holder]) {
             Layer memory layer;
-            addressToLayer[_holder] = layer;
+            addressToCreatedLayer[_holder] = layer;
             created[_holder] = false;
             emit LayerRemoved(_holder);
+        } else if (curated[_holder]) {
+            address layerCreator = addressToCuratedLayerAddress[msg.sender];
+            addressToCuratedLayerAddress[msg.sender] = address(0);
+            emit CurationRemoved(msg.sender, layerCreator);
         }
         emit noLongerHolder(_holder);
     }
@@ -169,14 +174,16 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Add a cryptomedia layer
      * @dev Emits a LayerAdded event upon success; callable by token holders
      */
-    function addLayer(string memory _URI) public holder(msg.sender) {
-        require(!created[msg.sender], "ALREADY CREATED");
+    function createLayer(string memory _URI) public holder(msg.sender) {
+        require(
+            !created[msg.sender] && !curated[msg.sender],
+            "ALREADY CONTRIBUTED"
+        );
         Layer memory layer;
         layer.URI = _URI;
         layer.creator = msg.sender;
-        created[msg.sender] = true;
-        addressToLayer[msg.sender] = layer;
-        emit LayerAdded(msg.sender, _URI);
+        addressToCreatedLayer[msg.sender] = layer;
+        emit LayerCreated(msg.sender, _URI);
     }
 
     /**
@@ -184,10 +191,10 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @dev Emits a LayerRemoved event upon success; callable by token holders
      */
 
-    function removeLayer() public holder(msg.sender) {
-        require(created[msg.sender], "HAVE NOT CREATED");
+    function removeCreatedLayer() public holder(msg.sender) {
+        require(created[msg.sender], "NOTHING TO REMOVE");
         Layer memory layer;
-        addressToLayer[msg.sender] = layer;
+        addressToCreatedLayer[msg.sender] = layer;
         created[msg.sender] = false;
         emit LayerRemoved(msg.sender);
     }
@@ -196,9 +203,12 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Curate a cryptomedia by specifying the layer creator
      * @dev Emits a Curated event upon success; callable by token holders
      */
-    function curate(address _creator) public holder(msg.sender) {
-        require(!isCuratingLayer[msg.sender][_creator], "ALREADY CURATED");
-        isCuratingLayer[msg.sender][_creator] = true;
+    function curateLayer(address _creator) public holder(msg.sender) {
+        require(
+            !created[msg.sender] && !curated[msg.sender],
+            "ALREADY CONTRIBUTED"
+        );
+        addressToCuratedLayerAddress[msg.sender] = _creator;
         emit CurationAdded(msg.sender, _creator);
     }
 
@@ -206,40 +216,33 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Remove a curation from a cryptomedia layer by specifying the layer creator
      * @dev Emits a Removed event upon success; callable by token holders
      */
-    function removeCuration(address _creator) public holder(msg.sender) {
-        require(isCuratingLayer[msg.sender][_creator], "HAVE NOT CURATED");
-        isCuratingLayer[msg.sender][_creator] = false;
-        emit CurationRemoved(msg.sender, _creator);
+    function removeCuratedLayer() public holder(msg.sender) {
+        require(curated[msg.sender], "NOTHING TO REMOVE");
+        address layerCreator = addressToCuratedLayerAddress[msg.sender];
+        addressToCuratedLayerAddress[msg.sender] = address(0);
+        emit CurationRemoved(msg.sender, layerCreator);
     }
 
     // ============ Public helper functions ============
 
     /**
-     * @notice Find whether an address is curating a layer
-     * @dev Must specify user address and layer creator address; protects against edge case in which user sells all tokens & all curations are removed
+     * @notice Return the layer information for a given address that has created or curated a layer
+     * @dev Must specify user address; returns layer creator address and layer URI; reverts if address has not created or curated a layer
      */
-    function isAddressCuratingLayer(address _user, address _layerCreator)
+    function getLayer(address _user)
         public
         view
-        returns (bool)
+        returns (address, string memory)
     {
-        if (balanceOf[_user] == 0) {
-            return false;
+        require(created[_user] || curated[_user], "NO MATCHING LAYERS");
+        if (created[_user]) {
+            return (_user, addressToCreatedLayer[_user].URI);
         } else {
-            return isCuratingLayer[_user][_layerCreator];
+            return (
+                addressToCuratedLayerAddress[_user],
+                addressToCreatedLayer[addressToCuratedLayerAddress[_user]].URI
+            );
         }
-    }
-
-    /**
-     * @notice Return layer media URI given address of layer creator
-     * @dev Must specify user address and layer creator address; protects against edge case in which user sells all tokens & all curations are removed
-     */
-    function getLayerURI(address _layerCreator)
-        public
-        view
-        returns (string memory)
-    {
-        return addressToLayer[_layerCreator].URI;
     }
 
     // ============ Utility ============

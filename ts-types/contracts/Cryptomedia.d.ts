@@ -22,30 +22,25 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface CryptomediaInterface extends ethers.utils.Interface {
   functions: {
-    "addLayer(string)": FunctionFragment;
-    "addressToLayer(address)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
+    "createLayer(string)": FunctionFragment;
     "created(address)": FunctionFragment;
-    "curate(address)": FunctionFragment;
+    "curateLayer(address)": FunctionFragment;
+    "curated(address)": FunctionFragment;
+    "getLayer(address)": FunctionFragment;
     "initialize(string,address)": FunctionFragment;
-    "isCuratingLayer(address,address)": FunctionFragment;
     "name()": FunctionFragment;
     "poolBalance()": FunctionFragment;
     "ppm()": FunctionFragment;
-    "removeCuration(address)": FunctionFragment;
-    "removeLayer()": FunctionFragment;
+    "removeCreatedLayer()": FunctionFragment;
+    "removeCuratedLayer()": FunctionFragment;
     "reserveRatio()": FunctionFragment;
     "sell(uint256,uint256)": FunctionFragment;
     "totalSupply()": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "addLayer", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "addressToLayer",
-    values: [string]
-  ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "bondingCurve",
@@ -55,14 +50,13 @@ interface CryptomediaInterface extends ethers.utils.Interface {
     functionFragment: "buy",
     values: [BigNumberish, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "createLayer", values: [string]): string;
   encodeFunctionData(functionFragment: "created", values: [string]): string;
-  encodeFunctionData(functionFragment: "curate", values: [string]): string;
+  encodeFunctionData(functionFragment: "curateLayer", values: [string]): string;
+  encodeFunctionData(functionFragment: "curated", values: [string]): string;
+  encodeFunctionData(functionFragment: "getLayer", values: [string]): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isCuratingLayer",
     values: [string, string]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
@@ -72,11 +66,11 @@ interface CryptomediaInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "ppm", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "removeCuration",
-    values: [string]
+    functionFragment: "removeCreatedLayer",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "removeLayer",
+    functionFragment: "removeCuratedLayer",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -92,24 +86,24 @@ interface CryptomediaInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
 
-  decodeFunctionResult(functionFragment: "addLayer", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "addressToLayer",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "bondingCurve",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "created", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "curate", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "isCuratingLayer",
+    functionFragment: "createLayer",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "created", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "curateLayer",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "curated", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getLayer", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "poolBalance",
@@ -117,11 +111,11 @@ interface CryptomediaInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "ppm", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "removeCuration",
+    functionFragment: "removeCreatedLayer",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "removeLayer",
+    functionFragment: "removeCuratedLayer",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -138,19 +132,21 @@ interface CryptomediaInterface extends ethers.utils.Interface {
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
     "CurationAdded(address,address)": EventFragment;
     "CurationRemoved(address,address)": EventFragment;
-    "LayerAdded(address,string)": EventFragment;
+    "LayerCreated(address,string)": EventFragment;
     "LayerRemoved(address)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
+    "noLongerHolder(address)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Buy"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "CurationAdded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "CurationRemoved"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "LayerAdded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "LayerCreated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LayerRemoved"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Sell"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "noLongerHolder"): EventFragment;
 }
 
 export class Cryptomedia extends BaseContract {
@@ -197,16 +193,6 @@ export class Cryptomedia extends BaseContract {
   interface: CryptomediaInterface;
 
   functions: {
-    addLayer(
-      _URI: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    addressToLayer(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
-
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     bondingCurve(overrides?: CallOverrides): Promise<[string]>;
@@ -217,12 +203,24 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    createLayer(
+      _URI: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     created(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
 
-    curate(
+    curateLayer(
       _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    curated(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
+
+    getLayer(
+      _user: string,
+      overrides?: CallOverrides
+    ): Promise<[string, string]>;
 
     initialize(
       _name: string,
@@ -230,24 +228,17 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
-
     name(overrides?: CallOverrides): Promise<[string]>;
 
     poolBalance(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     ppm(overrides?: CallOverrides): Promise<[number]>;
 
-    removeCuration(
-      _creator: string,
+    removeCreatedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    removeLayer(
+    removeCuratedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -262,16 +253,6 @@ export class Cryptomedia extends BaseContract {
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
-  addLayer(
-    _URI: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  addressToLayer(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<[string, string] & { creator: string; URI: string }>;
-
   balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   bondingCurve(overrides?: CallOverrides): Promise<string>;
@@ -282,12 +263,21 @@ export class Cryptomedia extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  createLayer(
+    _URI: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
-  curate(
+  curateLayer(
     _creator: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  curated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
+  getLayer(_user: string, overrides?: CallOverrides): Promise<[string, string]>;
 
   initialize(
     _name: string,
@@ -295,24 +285,17 @@ export class Cryptomedia extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  isCuratingLayer(
-    arg0: string,
-    arg1: string,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
-
   name(overrides?: CallOverrides): Promise<string>;
 
   poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
   ppm(overrides?: CallOverrides): Promise<number>;
 
-  removeCuration(
-    _creator: string,
+  removeCreatedLayer(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  removeLayer(
+  removeCuratedLayer(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -327,13 +310,6 @@ export class Cryptomedia extends BaseContract {
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
-    addLayer(_URI: string, overrides?: CallOverrides): Promise<void>;
-
-    addressToLayer(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
-
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<string>;
@@ -344,9 +320,18 @@ export class Cryptomedia extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    createLayer(_URI: string, overrides?: CallOverrides): Promise<void>;
+
     created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
-    curate(_creator: string, overrides?: CallOverrides): Promise<void>;
+    curateLayer(_creator: string, overrides?: CallOverrides): Promise<void>;
+
+    curated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
+    getLayer(
+      _user: string,
+      overrides?: CallOverrides
+    ): Promise<[string, string]>;
 
     initialize(
       _name: string,
@@ -354,21 +339,15 @@ export class Cryptomedia extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
     name(overrides?: CallOverrides): Promise<string>;
 
     poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
     ppm(overrides?: CallOverrides): Promise<number>;
 
-    removeCuration(_creator: string, overrides?: CallOverrides): Promise<void>;
+    removeCreatedLayer(overrides?: CallOverrides): Promise<void>;
 
-    removeLayer(overrides?: CallOverrides): Promise<void>;
+    removeCuratedLayer(overrides?: CallOverrides): Promise<void>;
 
     reserveRatio(overrides?: CallOverrides): Promise<number>;
 
@@ -415,7 +394,7 @@ export class Cryptomedia extends BaseContract {
       { curator: string; layerCreator: string }
     >;
 
-    LayerAdded(
+    LayerCreated(
       creator?: string | null,
       contentURI?: null
     ): TypedEventFilter<
@@ -452,16 +431,13 @@ export class Cryptomedia extends BaseContract {
       [string, string, BigNumber],
       { from: string; to: string; value: BigNumber }
     >;
+
+    noLongerHolder(
+      user?: string | null
+    ): TypedEventFilter<[string], { user: string }>;
   };
 
   estimateGas: {
-    addLayer(
-      _URI: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    addressToLayer(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
@@ -472,23 +448,26 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    createLayer(
+      _URI: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     created(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    curate(
+    curateLayer(
       _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    curated(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    getLayer(_user: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       _name: string,
       _bondingCurve: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
@@ -497,12 +476,11 @@ export class Cryptomedia extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<BigNumber>;
 
-    removeCuration(
-      _creator: string,
+    removeCreatedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    removeLayer(
+    removeCuratedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -518,16 +496,6 @@ export class Cryptomedia extends BaseContract {
   };
 
   populateTransaction: {
-    addLayer(
-      _URI: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    addressToLayer(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     balanceOf(
       arg0: string,
       overrides?: CallOverrides
@@ -541,14 +509,29 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    createLayer(
+      _URI: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     created(
       arg0: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    curate(
+    curateLayer(
       _creator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    curated(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getLayer(
+      _user: string,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     initialize(
@@ -557,24 +540,17 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     poolBalance(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     ppm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    removeCuration(
-      _creator: string,
+    removeCreatedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    removeLayer(
+    removeCuratedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
