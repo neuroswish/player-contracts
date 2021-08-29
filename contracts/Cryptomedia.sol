@@ -165,6 +165,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         } else if (curated[_holder]) {
             address layerCreator = addressToCuratedLayerAddress[msg.sender];
             addressToCuratedLayerAddress[msg.sender] = address(0);
+            curated[msg.sender] = false;
             emit CurationRemoved(msg.sender, layerCreator);
         }
         emit noLongerHolder(_holder);
@@ -183,6 +184,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         layer.URI = _URI;
         layer.creator = msg.sender;
         addressToCreatedLayer[msg.sender] = layer;
+        created[msg.sender] = true;
         emit LayerCreated(msg.sender, _URI);
     }
 
@@ -209,6 +211,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
             "ALREADY CONTRIBUTED"
         );
         addressToCuratedLayerAddress[msg.sender] = _creator;
+        curated[msg.sender] = true;
         emit CurationAdded(msg.sender, _creator);
     }
 
@@ -220,6 +223,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         require(curated[msg.sender], "NOTHING TO REMOVE");
         address layerCreator = addressToCuratedLayerAddress[msg.sender];
         addressToCuratedLayerAddress[msg.sender] = address(0);
+        curated[msg.sender] = false;
         emit CurationRemoved(msg.sender, layerCreator);
     }
 
