@@ -2,7 +2,9 @@
 pragma solidity ^0.8.4;
 import "./BondingCurve.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBondingCurve.sol";
+import "./libraries/Base64.sol";
 
 /**
  * @title Cryptomedia
@@ -15,7 +17,7 @@ import "./interfaces/IBondingCurve.sol";
 
 contract Cryptomedia is ReentrancyGuardUpgradeable {
     // ======== Interface addresses ========
-    address public bondingCurve;
+    address public bondingCurve; // bonding curve interface address
     address public parameters;
 
     // ======== Continuous token params ========
@@ -33,7 +35,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     // ======== Layer params ========
     struct Layer {
         address creator; // layer creator
-        string URI; // layer content URI
+        string text; // layer content URI
     }
     mapping(address => Layer) private addressToLayer; // mapping from a creator's address to the layer the address has created
     //mapping(address => address) private addressToCuratedLayerAddress; // mapping from a curating address to the address of the layer's creator
@@ -54,7 +56,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         uint256 eth
     );
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event LayerCreated(address indexed creator, string contentURI);
+    event LayerCreated(address indexed creator, string text);
     event LayerRemoved(address indexed creator);
     // event CurationAdded(address indexed curator, address indexed layerCreator);
     // event CurationRemoved(
@@ -177,18 +179,18 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Add a cryptomedia layer
      * @dev Emits a LayerAdded event upon success; callable by token holders
      */
-    function createLayer(string memory _URI) public holder(msg.sender) {
+    function createLayer(string memory _text) public holder(msg.sender) {
         // require(
         //     !created[msg.sender] && !curated[msg.sender],
         //     "ALREADY CONTRIBUTED"
         // );
         require(!created[msg.sender]);
         Layer memory layer;
-        layer.URI = _URI;
+        layer.text = _text;
         layer.creator = msg.sender;
         addressToLayer[msg.sender] = layer;
         created[msg.sender] = true;
-        emit LayerCreated(msg.sender, _URI);
+        emit LayerCreated(msg.sender, _text);
     }
 
     /**
@@ -242,7 +244,30 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         returns (address, string memory)
     {
         require(created[_user], "NO MATCHING LAYERS");
-        return (_user, addressToLayer[_user].URI);
+        string memory layerText = addressToLayer[_user].text;
+        string[2] memory parts;
+        parts[
+            0
+        ] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
+        parts[1] = layerText;
+        string memory output = string(abi.encodePacked(parts[0], parts[1]));
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "VERSE $',
+                        upper(name),
+                        '", "image": "data:image/svg+xml;base64,',
+                        Base64.encode(bytes(output)),
+                        '"}'
+                    )
+                )
+            )
+        );
+        output = string(
+            abi.encodePacked("data:application/json;base64,", json)
+        );
+        return (_user, addressToLayer[_user].text);
         // if (created[_user]) {
         //     return (_user, addressToLayer[_user].URI);
         // } else {
@@ -286,5 +311,41 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         balanceOf[_from] = balanceOf[_from] - _value;
         totalSupply = totalSupply - _value;
         emit Transfer(_from, address(0), _value);
+    }
+
+    /**
+     * Upper
+     *
+     * Converts all the values of a string to their corresponding upper case
+     * value.
+     *
+     * @param _base When being used for a data type this is the extended object
+     *              otherwise this is the string base to convert to upper case
+     * @return string
+     */
+    function upper(string memory _base) internal pure returns (string memory) {
+        bytes memory _baseBytes = bytes(_base);
+        for (uint256 i = 0; i < _baseBytes.length; i++) {
+            _baseBytes[i] = _upper(_baseBytes[i]);
+        }
+        return string(_baseBytes);
+    }
+
+    /**
+     * Upper
+     *
+     * Convert an alphabetic character to upper case and return the original
+     * value when not alphabetic
+     *
+     * @param _b1 The byte to be converted to upper case
+     * @return bytes1 The converted value if the passed value was alphabetic
+     *                and in a lower case otherwise returns the original value
+     */
+    function _upper(bytes1 _b1) private pure returns (bytes1) {
+        if (_b1 >= 0x61 && _b1 <= 0x7A) {
+            return bytes1(uint8(_b1) - 32);
+        }
+
+        return _b1;
     }
 }
