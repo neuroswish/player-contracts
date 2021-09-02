@@ -38,6 +38,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         string text; // layer content URI
     }
     mapping(address => Layer) private addressToLayer; // mapping from a creator's address to the layer the address has created
+    //mapping(uint256 => Layer) private idToLayer; // mapping from a unique layer id to that layer
     //mapping(address => address) private addressToCuratedLayerAddress; // mapping from a curating address to the address of the layer's creator
 
     // ======== Events ========
@@ -57,6 +58,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     );
     event Transfer(address indexed from, address indexed to, uint256 value);
     event LayerCreated(address indexed creator, string text);
+    event LayerUpdated(address indexed creator, string newText);
     event LayerRemoved(address indexed creator);
     // event CurationAdded(address indexed curator, address indexed layerCreator);
     // event CurationRemoved(
@@ -179,12 +181,17 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Add a cryptomedia layer
      * @dev Emits a LayerAdded event upon success; callable by token holders
      */
-    function createLayer(string memory _text) public holder(msg.sender) {
+    function createLayer(string memory _text)
+        public
+        payable
+        holder(msg.sender)
+    {
         // require(
         //     !created[msg.sender] && !curated[msg.sender],
         //     "ALREADY CONTRIBUTED"
         // );
         require(!created[msg.sender]);
+        require(bytes(_text).length < 300, "INPUT TOO LARGE");
         Layer memory layer;
         layer.text = _text;
         layer.creator = msg.sender;
@@ -194,8 +201,19 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     }
 
     /**
+     * @notice Update a cryptomedia layer
+     * @dev Emits a LayerUpdated event upon success; callable by token-holding creators
+     */
+    function updateLayer(string memory _newText) public holder(msg.sender) {
+        require(created[msg.sender]);
+        require(bytes(_newText).length < 300, "INPUT TOO LARGE");
+        addressToLayer[msg.sender].text = _newText;
+        emit LayerUpdated(msg.sender, _newText);
+    }
+
+    /**
      * @notice Remove a cryptomedia layer
-     * @dev Emits a LayerRemoved event upon success; callable by token holders
+     * @dev Emits a LayerRemoved event upon success; callable by token-holding creators
      */
 
     function removeLayer() public holder(msg.sender) {
