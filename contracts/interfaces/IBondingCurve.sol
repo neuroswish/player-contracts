@@ -7,11 +7,23 @@ interface IBondingCurve {
         view
         returns (uint256);
 
+    function calculateInitializationPrice(uint32 _reserveRatio)
+        external
+        pure
+        returns (uint256);
+
     function calculatePurchaseReturn(
         uint256 _supply,
         uint256 _poolBalance,
         uint32 _reserveRatio,
         uint256 _price
+    ) external returns (uint256);
+
+    function calculatePrice(
+        uint256 _supply,
+        uint256 _poolBalance,
+        uint32 _reserveRatio,
+        uint256 _tokens
     ) external returns (uint256);
 
     function calculateSaleReturn(

@@ -49,6 +49,35 @@ contract BondingCurve is Power {
     }
 
     /**
+     * @dev given total supply, pool balance, reserve ratio and desired number of tokens, calculates the price required
+     *
+     * Formula:
+     * return = _poolBalance * ((1 + _tokens / _supply) ^ (maxRatio / reserveRatio) - 1)
+     *
+     * @param _supply          liquid token supply
+     * @param _poolBalance  reserve balance
+     * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)
+     * @param _tokens          amount of reserve tokens to get the target amount for
+     *
+     * @return tokens
+     */
+    function calculatePrice(
+        uint256 _supply,
+        uint256 _poolBalance,
+        uint32 _reserveRatio,
+        uint256 _tokens
+    ) public view returns (uint256) {
+        (uint256 result, uint8 precision) = power(
+            (_tokens + _supply),
+            _supply,
+            maxRatio,
+            _reserveRatio
+        );
+        uint256 temp = (_poolBalance * result) >> precision;
+        return (temp - _poolBalance);
+    }
+
+    /**
      * @dev given total supply, pool balance, reserve ratio and a token amount, calculates the amount of ETH returned
      *
      * Formula:
@@ -114,5 +143,27 @@ contract BondingCurve is Power {
             maxRatio
         );
         return (temp >> precision);
+    }
+
+    /**
+     * @dev given a reserve ratio and slope factor, calculates the number of price required to purchase the first token when initializing the bonding curve supply
+     *
+     * Formula:
+     * price = (_reserveRatio * slopeFactor) / maxRatio
+     *
+     * @param _reserveRatio   reserve weight, represented in ppm (1-1000000)
+     *
+     * @return price for initial token
+     */
+
+    function calculateInitializationPrice(uint32 _reserveRatio)
+        public
+        pure
+        returns (uint256)
+    {
+        if (_reserveRatio == maxRatio) {
+            return (slopeFactor);
+        }
+        return ((_reserveRatio * slopeFactor) / maxRatio);
     }
 }

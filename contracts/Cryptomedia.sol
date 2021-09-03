@@ -30,7 +30,6 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
 
     // ======== Player params ========
     mapping(address => bool) public created; // mapping of an address to bool representing whether address has created a layer
-    //mapping(address => bool) public curated; // mapping of an address to bool representing whether address has curated a layer
 
     // ======== Layer params ========
     struct Layer {
@@ -38,8 +37,6 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         string text; // layer content URI
     }
     mapping(address => Layer) private addressToLayer; // mapping from a creator's address to the layer the address has created
-    //mapping(uint256 => Layer) private idToLayer; // mapping from a unique layer id to that layer
-    //mapping(address => address) private addressToCuratedLayerAddress; // mapping from a curating address to the address of the layer's creator
 
     // ======== Events ========
     event Buy(
@@ -60,11 +57,6 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     event LayerCreated(address indexed creator, string text);
     event LayerUpdated(address indexed creator, string newText);
     event LayerRemoved(address indexed creator);
-    // event CurationAdded(address indexed curator, address indexed layerCreator);
-    // event CurationRemoved(
-    //     address indexed curator,
-    //     address indexed layerCreator
-    // );
     event noLongerHolder(address indexed user);
 
     // ======== Modifiers ========
@@ -73,6 +65,14 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      */
     modifier holder(address user) {
         require(balanceOf[user] > 0, "MUST HOLD TOKENS");
+        _;
+    }
+
+    /**
+     * @notice Check to see if address is a creator
+     */
+    modifier creator(address user) {
+        require(created[user], "MUST BE CREATOR");
         _;
     }
 
@@ -97,46 +97,43 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
 
     /**
      * @notice Buy market tokens with ETH
-     * @dev Emits a Buy event upon success; callable by anyone
+     * @dev Emits a Buy event upon success
      */
-    function buy(uint256 _price, uint256 _minTokensReturned) public payable {
-        require(msg.value == _price && msg.value > 0, "INVALID PRICE");
-        require(_minTokensReturned > 0, "INVALID SLIPPAGE");
+    function buy(
+        address _creator,
+        uint256 _price,
+        uint256 _maxPrice
+    ) private {
         // calculate tokens returned
-        uint256 tokensReturned;
+        uint256 priceRequired;
         if (totalSupply == 0) {
-            tokensReturned = IBondingCurve(bondingCurve)
-                .calculateInitializationReturn(_price, reserveRatio);
-            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
+            priceRequired = IBondingCurve(bondingCurve)
+                .calculateInitializationPrice(reserveRatio);
+            require(priceRequired <= _maxPrice, "SLIPPAGE");
         } else {
-            tokensReturned = IBondingCurve(bondingCurve)
-                .calculatePurchaseReturn(
-                    totalSupply,
-                    poolBalance,
-                    reserveRatio,
-                    _price
-                );
-            require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
+            priceRequired = IBondingCurve(bondingCurve).calculatePrice(
+                totalSupply,
+                poolBalance,
+                reserveRatio,
+                1
+            );
+            require(priceRequired <= _maxPrice, "SLIPPAGE");
         }
+        require(_price >= priceRequired, "INSUFFICIENT FUNDS");
         // mint tokens
-        _mint(msg.sender, tokensReturned);
+        _mint(_creator, 1);
         poolBalance += _price;
-        emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, _price);
+        if (_price > priceRequired) {
+            sendValue(_creator, (_price - priceRequired));
+        }
+        emit Buy(_creator, poolBalance, totalSupply, 1, _price);
     }
 
     /**
      * @notice Sell market tokens for ETH
      * @dev Emits a Sell event upon success; callable by token holders
      */
-    function sell(uint256 _tokens, uint256 _minETHReturned)
-        public
-        holder(msg.sender)
-        nonReentrant
-    {
-        require(
-            _tokens > 0 && _tokens <= balanceOf[msg.sender],
-            "INVALID TOKEN AMT"
-        );
+    function sell(address _creator, uint256 _minETHReturned) private {
         require(poolBalance > 0, "PB < 0");
         require(_minETHReturned > 0, "INVALID SLIPPAGE");
         // calculate ETH returned
@@ -144,54 +141,29 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
             totalSupply,
             poolBalance,
             reserveRatio,
-            _tokens
+            1
         );
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
         // burn tokens
-        _burn(msg.sender, _tokens);
-        if (balanceOf[msg.sender] == 0) {
-            removeHolder(msg.sender);
-        }
+        _burn(_creator, 1);
         poolBalance -= ethReturned;
-        sendValue(payable(msg.sender), ethReturned);
-        emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
-    }
-
-    /**
-     * @notice If a holder sells all tokens, remove any layer created or curation
-     * @dev Emits a noLongerHolder event upon success
-     */
-    function removeHolder(address _holder) private {
-        if (created[_holder]) {
-            Layer memory layer;
-            addressToLayer[_holder] = layer;
-            created[_holder] = false;
-            emit LayerRemoved(_holder);
-        }
-        // else if (curated[_holder]) {
-        //     address layerCreator = addressToCuratedLayerAddress[msg.sender];
-        //     addressToCuratedLayerAddress[msg.sender] = address(0);
-        //     curated[msg.sender] = false;
-        //     emit CurationRemoved(msg.sender, layerCreator);
-        // }
-        emit noLongerHolder(_holder);
+        sendValue(_creator, ethReturned);
+        emit Sell(_creator, poolBalance, totalSupply, 1, ethReturned);
     }
 
     /**
      * @notice Add a cryptomedia layer
      * @dev Emits a LayerAdded event upon success; callable by token holders
      */
-    function createLayer(string memory _text)
+    function createLayer(string memory _text, uint256 _maxPrice)
         public
         payable
-        holder(msg.sender)
     {
-        // require(
-        //     !created[msg.sender] && !curated[msg.sender],
-        //     "ALREADY CONTRIBUTED"
-        // );
-        require(!created[msg.sender]);
+        require(msg.value > 0, "INVALID PRICE");
+        require(_maxPrice > 0, "INVALID SLIPPAGE");
+        require(!created[msg.sender], "ALREADY CREATED");
         require(bytes(_text).length < 300, "INPUT TOO LARGE");
+        buy(msg.sender, msg.value, _maxPrice);
         Layer memory layer;
         layer.text = _text;
         layer.creator = msg.sender;
@@ -204,8 +176,11 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Update a cryptomedia layer
      * @dev Emits a LayerUpdated event upon success; callable by token-holding creators
      */
-    function updateLayer(string memory _newText) public holder(msg.sender) {
-        require(created[msg.sender]);
+    function updateLayer(string memory _newText)
+        public
+        holder(msg.sender)
+        creator(msg.sender)
+    {
         require(bytes(_newText).length < 300, "INPUT TOO LARGE");
         addressToLayer[msg.sender].text = _newText;
         emit LayerUpdated(msg.sender, _newText);
@@ -216,39 +191,17 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @dev Emits a LayerRemoved event upon success; callable by token-holding creators
      */
 
-    function removeLayer() public holder(msg.sender) {
-        require(created[msg.sender], "NOTHING TO REMOVE");
+    function removeLayer(uint256 _minETHReturned)
+        public
+        holder(msg.sender)
+        creator(msg.sender)
+    {
+        sell(msg.sender, _minETHReturned);
         Layer memory layer;
         addressToLayer[msg.sender] = layer;
         created[msg.sender] = false;
         emit LayerRemoved(msg.sender);
     }
-
-    // /**
-    //  * @notice Curate a cryptomedia by specifying the layer creator
-    //  * @dev Emits a Curated event upon success; callable by token holders
-    //  */
-    // function curateLayer(address _creator) public holder(msg.sender) {
-    //     require(
-    //         !created[msg.sender] && !curated[msg.sender],
-    //         "ALREADY CONTRIBUTED"
-    //     );
-    //     addressToCuratedLayerAddress[msg.sender] = _creator;
-    //     curated[msg.sender] = true;
-    //     emit CurationAdded(msg.sender, _creator);
-    // }
-
-    // /**
-    //  * @notice Remove a curation from a cryptomedia layer by specifying the layer creator
-    //  * @dev Emits a Removed event upon success; callable by token holders
-    //  */
-    // function removeCuratedLayer() public holder(msg.sender) {
-    //     require(curated[msg.sender], "NOTHING TO REMOVE");
-    //     address layerCreator = addressToCuratedLayerAddress[msg.sender];
-    //     addressToCuratedLayerAddress[msg.sender] = address(0);
-    //     curated[msg.sender] = false;
-    //     emit CurationRemoved(msg.sender, layerCreator);
-    // }
 
     // ============ Public helper functions ============
 
@@ -286,14 +239,6 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
             abi.encodePacked("data:application/json;base64,", json)
         );
         return (_user, addressToLayer[_user].text);
-        // if (created[_user]) {
-        //     return (_user, addressToLayer[_user].URI);
-        // } else {
-        //     return (
-        //         addressToCuratedLayerAddress[_user],
-        //         addressToCreatedLayer[addressToCuratedLayerAddress[_user]].URI
-        //     );
-        // }
     }
 
     // ============ Utility ============
