@@ -25,10 +25,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.CryptomediaFactory__factory>;
     getContractFactory(
-      name: "Greeter",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Greeter__factory>;
-    getContractFactory(
       name: "IBondingCurve",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBondingCurve__factory>;

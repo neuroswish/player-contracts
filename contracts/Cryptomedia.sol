@@ -7,36 +7,37 @@ import "./interfaces/IBondingCurve.sol";
 import "./libraries/Base64.sol";
 
 /**
- * @title Cryptomedia
+ * @title Market
  * @author neuroswish
  *
- * Multiplayer cryptomedia
+ * Social markets
  *
  * "All of you Mario, it's all a game"
  */
 
 contract Cryptomedia is ReentrancyGuardUpgradeable {
     // ======== Interface addresses ========
+    address public factory; // factory address
     address public bondingCurve; // bonding curve interface address
-    address public parameters;
 
     // ======== Continuous token params ========
     string public name; // cryptomedia name
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm; // token units
     uint256 public poolBalance; // ETH balance in contract pool
+    uint256 public signalTokenSupply; // signal provider token supply
     uint256 public totalSupply; // total supply of tokens in circulation
-    mapping(address => uint256) public balanceOf; // mapping of an address to that user's total token balance for this contract
+    uint256 public feePct; // transaction fee distributed to signalers
+    uint256 public feeBase; // transaction fee base
+    mapping(address => uint256) public balanceOf; // mapping of an address to that user's total token balance
+    mapping(address => mapping(address => uint256)) public allowance;
 
-    // ======== Player params ========
-    mapping(address => bool) public created; // mapping of an address to bool representing whether address has created a layer
-
-    // ======== Layer params ========
-    struct Layer {
-        address creator; // layer creator
-        string text; // layer content URI
-    }
-    mapping(address => Layer) private addressToLayer; // mapping from a creator's address to the layer the address has created
+    // ======== User params ========
+    mapping(address => string) public userInteractions; // mapping from an address to a URI of that address's interactions in this market
+    mapping(address => mapping(address => uint256)) public tokensStakedToUser; // mapping to amount of tokens staked by a user to another user
+    mapping(address => uint256) public totalTokensStakedByUser; // mapping from an address to the amount of tokens the address has staked
+    mapping(address => uint256) public totalTokensStakedToUser; // mapping from an address to the amount of tokens staked to that address
+    mapping(address => uint256) public signalBalanceOf; // signal token balance for a user
 
     // ======== Events ========
     event Buy(
@@ -53,11 +54,14 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         uint256 tokens,
         uint256 eth
     );
+
+    // ERC-20
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event LayerCreated(address indexed creator, string text);
-    event LayerUpdated(address indexed creator, string newText);
-    event LayerRemoved(address indexed creator);
-    event noLongerHolder(address indexed user);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     // ======== Modifiers ========
     /**
@@ -68,18 +72,14 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         _;
     }
 
-    /**
-     * @notice Check to see if address is a creator
-     */
-    modifier creator(address user) {
-        require(created[user], "MUST BE CREATOR");
-        _;
+    constructor() {
+        factory = msg.sender;
     }
 
     // ======== Initializer for new market proxy ========
     /**
      * @notice Check to see if address holds tokens
-     * @dev Sets reserveRatio, ppm, name, and bondingCurve address
+     * @dev Sets reserveRatio, ppm, name, and bondingCurve address; called by factory at time of deployment
      */
     function initialize(string calldata _name, address _bondingCurve)
         public
@@ -88,6 +88,8 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     {
         reserveRatio = 333333;
         ppm = 1000000;
+        feePct = (5**17);
+        feeBase = (10**18);
         name = _name;
         bondingCurve = _bondingCurve;
         __ReentrancyGuard_init();
@@ -96,150 +98,153 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     // ======== Functions ========
 
     /**
-     * @notice Buy market tokens with ETH
-     * @dev Emits a Buy event upon success
+     * @notice Stake tokens to a user
+     * @dev Emits a Staked event upon success; callable by holders
      */
-    function buy(
-        address _creator,
-        uint256 _price,
-        uint256 _maxPrice
-    ) private {
-        // calculate tokens returned
-        uint256 priceRequired;
-        if (totalSupply == 0) {
-            priceRequired = IBondingCurve(bondingCurve)
-                .calculateInitializationPrice(reserveRatio);
-            require(priceRequired <= _maxPrice, "SLIPPAGE");
+    function stake(address _user, uint256 _amount) public holder(msg.sender) {
+        require(balanceOf[_user] > 0, "NOT IN NETWORK");
+        require(
+            _amount > 0 && _amount >= balanceOf[msg.sender],
+            "INVALID AMOUNT"
+        );
+        // calculate signal provider tokens
+        uint256 signal;
+        if (signalTokenSupply == 0) {
+            signal = _amount;
         } else {
-            priceRequired = IBondingCurve(bondingCurve).calculatePrice(
-                totalSupply,
-                poolBalance,
-                reserveRatio,
-                1
-            );
-            require(priceRequired <= _maxPrice, "SLIPPAGE");
+            signal = (_amount * signalTokenSupply) / balanceOf[address(this)];
         }
-        require(_price >= priceRequired, "INSUFFICIENT FUNDS");
-        // mint tokens
-        _mint(_creator, 1);
+        require(signal > 0, "INSUFFICIENT_SIGNAL_MINTED");
+        // add new LP tokens minted to total LP token supply
+        signalTokenSupply += signal;
+        // transfer LP tokens
+        transferFrom(msg.sender, address(this), _amount);
+        totalTokensStakedByUser[msg.sender] += _amount;
+        tokensStakedToUser[msg.sender][_user] += _amount;
+        totalTokensStakedToUser[_user] += _amount;
+    }
+
+    // remove stake from user and burn signal tokens to receive corresponding number of tokens back
+    function unstake(address _user) public holder(msg.sender) nonReentrant {
+        require(tokensStakedToUser[msg.sender][_user] > 0, "NO STAKE");
+        // get number of signal tokens to burn to return stake (should be equal to tokens staked for the user specified)
+        uint256 signalTokensToBurn = tokensStakedToUser[msg.sender][_user];
+        // calculate the number of tokens to send return to the user based on their pro-rata share of the signal token pool
+        uint256 tokensToGetBack = (signalTokensToBurn *
+            balanceOf[address(this)]) / signalTokenSupply;
+        // make sure that number is greater than or equal to the number of staked tokens in the contract
+        require(
+            tokensToGetBack >= balanceOf[address(this)],
+            "INSUFFICIENT SUPPLY"
+        );
+        // send the user the tokens
+        transferFrom(address(this), msg.sender, tokensToGetBack);
+        // deduct the signal tokens from the user's signal token balance
+        signalBalanceOf[msg.sender] -= signalTokensToBurn;
+        // deduct the signal tokens from the total signal token balance
+        signalTokenSupply -= signalTokensToBurn;
+        // set the tokens staked to the specified user by msg.sender to 0
+        tokensStakedToUser[msg.sender][_user] = 0;
+    }
+
+    // should be callable by staker or contributor
+    // reward tokens (inflationary minted) have to be added to the same staking pool (aka balanceOf[address(this)])
+    function redeem(address _staker, address _contributor)
+        public
+        holder(msg.sender)
+    {
+        require(msg.sender == _contributor || msg.sender == _staker);
+        require(tokensStakedToUser[_staker][_contributor] > 0, "NO STAKE");
+        // calculate number of signal tokens
+        uint256 signalTokens = tokensStakedToUser[_staker][_contributor];
+        // calculate the number of tokens to return to the staker based on their pro-rata share of the signal token pool
+        uint256 tokensToGetBack = (signalTokens * balanceOf[address(this)]) /
+            signalTokenSupply;
+        // make sure that number is greater than or equal to the number of staked tokens in the contract
+        require(
+            tokensToGetBack >= balanceOf[address(this)],
+            "INSUFFICIENT SUPPLY"
+        );
+        // calculate profit to redeem
+        uint256 profit = tokensToGetBack - signalTokens;
+        // if there's no profit, then nothing to redeem; revert
+        require(profit > 0, "NOTHING TO REDEEM");
+        // calculate equal reward for staker and contributor
+        uint256 reward = profit / 2;
+        // transfer tokens to staker and contributor from staking pool supply
+        // the associated profit from this relationship is now taken out of the staking pool
+        transferFrom(address(this), _contributor, reward);
+        transferFrom(address(this), _staker, reward);
+    }
+
+    /**
+     * @notice Buy market tokens with ETH
+     * @dev Emits a Buy event upon success; callable by anyone
+     */
+    function buy(uint256 _price, uint256 _minTokensReturned) public payable {
+        require(msg.value == _price && msg.value > 0, "INVALID PRICE");
+        require(_minTokensReturned > 0, "INVALID SLIPPAGE");
+        // calculate tokens returned
+        uint256 tokensReturned;
+        if (totalSupply == 0) {
+            tokensReturned = IBondingCurve(bondingCurve)
+                .calculateInitializationReturn(_price, reserveRatio);
+        } else {
+            tokensReturned = IBondingCurve(bondingCurve)
+                .calculatePurchaseReturn(
+                    totalSupply,
+                    poolBalance,
+                    reserveRatio,
+                    _price
+                );
+        }
+        // calculate reward fee
+        uint256 reward = (tokensReturned * feePct) / feeBase;
+        tokensReturned -= reward;
+        // make sure final token amount is within slippage tolerance
+        require(tokensReturned >= _minTokensReturned, "SLIPPAGE");
+        // add reward fee to staking pool
+        _mint(address(this), reward);
+        // mint tokens for buyer
+        _mint(msg.sender, tokensReturned);
         poolBalance += _price;
-        if (_price > priceRequired) {
-            sendValue(_creator, (_price - priceRequired));
-        }
-        emit Buy(_creator, poolBalance, totalSupply, 1, _price);
+        emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, _price);
     }
 
     /**
      * @notice Sell market tokens for ETH
      * @dev Emits a Sell event upon success; callable by token holders
      */
-    function sell(address _creator, uint256 _minETHReturned) private {
-        require(poolBalance > 0, "PB < 0");
+    function sell(uint256 _tokens, uint256 _minETHReturned)
+        public
+        holder(msg.sender)
+        nonReentrant
+    {
+        require(
+            _tokens > 0 && _tokens <= balanceOf[msg.sender],
+            "INVALID TOKEN AMT"
+        );
+        require(poolBalance > 0, "PB<0");
         require(_minETHReturned > 0, "INVALID SLIPPAGE");
         // calculate ETH returned
         uint256 ethReturned = IBondingCurve(bondingCurve).calculateSaleReturn(
             totalSupply,
             poolBalance,
             reserveRatio,
-            1
+            _tokens
         );
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
         // burn tokens
-        _burn(_creator, 1);
+        _burn(msg.sender, _tokens);
+        if (balanceOf[msg.sender] == 0) {
+            //removeHolder(msg.sender);
+        }
         poolBalance -= ethReturned;
-        sendValue(_creator, ethReturned);
-        emit Sell(_creator, poolBalance, totalSupply, 1, ethReturned);
-    }
-
-    /**
-     * @notice Add a cryptomedia layer
-     * @dev Emits a LayerAdded event upon success; callable by token holders
-     */
-    function createLayer(string memory _text, uint256 _maxPrice)
-        public
-        payable
-    {
-        require(msg.value > 0, "INVALID PRICE");
-        require(_maxPrice > 0, "INVALID SLIPPAGE");
-        require(!created[msg.sender], "ALREADY CREATED");
-        require(bytes(_text).length < 300, "INPUT TOO LARGE");
-        buy(msg.sender, msg.value, _maxPrice);
-        Layer memory layer;
-        layer.text = _text;
-        layer.creator = msg.sender;
-        addressToLayer[msg.sender] = layer;
-        created[msg.sender] = true;
-        emit LayerCreated(msg.sender, _text);
-    }
-
-    /**
-     * @notice Update a cryptomedia layer
-     * @dev Emits a LayerUpdated event upon success; callable by token-holding creators
-     */
-    function updateLayer(string memory _newText)
-        public
-        holder(msg.sender)
-        creator(msg.sender)
-    {
-        require(bytes(_newText).length < 300, "INPUT TOO LARGE");
-        addressToLayer[msg.sender].text = _newText;
-        emit LayerUpdated(msg.sender, _newText);
-    }
-
-    /**
-     * @notice Remove a cryptomedia layer
-     * @dev Emits a LayerRemoved event upon success; callable by token-holding creators
-     */
-
-    function removeLayer(uint256 _minETHReturned)
-        public
-        holder(msg.sender)
-        creator(msg.sender)
-    {
-        sell(msg.sender, _minETHReturned);
-        Layer memory layer;
-        addressToLayer[msg.sender] = layer;
-        created[msg.sender] = false;
-        emit LayerRemoved(msg.sender);
+        sendValue(payable(msg.sender), ethReturned);
+        emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
     }
 
     // ============ Public helper functions ============
-
-    /**
-     * @notice Return the layer information for a given address that has created or curated a layer
-     * @dev Must specify user address; returns layer creator address and layer URI; reverts if address has not created or curated a layer
-     */
-    function getLayer(address _user)
-        public
-        view
-        returns (address, string memory)
-    {
-        require(created[_user], "NO MATCHING LAYERS");
-        string memory layerText = addressToLayer[_user].text;
-        string[2] memory parts;
-        parts[
-            0
-        ] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
-        parts[1] = layerText;
-        string memory output = string(abi.encodePacked(parts[0], parts[1]));
-        string memory json = Base64.encode(
-            bytes(
-                string(
-                    abi.encodePacked(
-                        '{"name": "VERSE $',
-                        upper(name),
-                        '", "image": "data:image/svg+xml;base64,',
-                        Base64.encode(bytes(output)),
-                        '"}'
-                    )
-                )
-            )
-        );
-        output = string(
-            abi.encodePacked("data:application/json;base64,", json)
-        );
-        return (_user, addressToLayer[_user].text);
-    }
 
     // ============ Utility ============
 
@@ -276,39 +281,42 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         emit Transfer(_from, address(0), _value);
     }
 
-    /**
-     * Upper
-     *
-     * Converts all the values of a string to their corresponding upper case
-     * value.
-     *
-     * @param _base When being used for a data type this is the extended object
-     *              otherwise this is the string base to convert to upper case
-     * @return string
-     */
-    function upper(string memory _base) internal pure returns (string memory) {
-        bytes memory _baseBytes = bytes(_base);
-        for (uint256 i = 0; i < _baseBytes.length; i++) {
-            _baseBytes[i] = _upper(_baseBytes[i]);
-        }
-        return string(_baseBytes);
+    function _approve(
+        address owner,
+        address spender,
+        uint256 value
+    ) private {
+        allowance[owner][spender] = value;
+        emit Approval(owner, spender, value);
     }
 
-    /**
-     * Upper
-     *
-     * Convert an alphabetic character to upper case and return the original
-     * value when not alphabetic
-     *
-     * @param _b1 The byte to be converted to upper case
-     * @return bytes1 The converted value if the passed value was alphabetic
-     *                and in a lower case otherwise returns the original value
-     */
-    function _upper(bytes1 _b1) private pure returns (bytes1) {
-        if (_b1 >= 0x61 && _b1 <= 0x7A) {
-            return bytes1(uint8(_b1) - 32);
-        }
+    function _transfer(
+        address from,
+        address to,
+        uint256 value
+    ) private {
+        balanceOf[from] = balanceOf[from] - value;
+        balanceOf[to] = balanceOf[to] + value;
+        emit Transfer(from, to, value);
+    }
 
-        return _b1;
+    function approve(address spender, uint256 value) private returns (bool) {
+        _approve(msg.sender, spender, value);
+        return true;
+    }
+
+    function transfer(address to, uint256 value) private returns (bool) {
+        _transfer(msg.sender, to, value);
+        return true;
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) private returns (bool) {
+        allowance[from][msg.sender] = allowance[from][msg.sender] - value;
+        _transfer(from, to, value);
+        return true;
     }
 }
