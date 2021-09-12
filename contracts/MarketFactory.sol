@@ -1,42 +1,42 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 
-import "./Cryptomedia.sol";
+import "./Market.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 /**
- * @title Cryptomedia Factory
+ * @title Market Factory
  * @author neuroswish
  *
- * Factory for deploying new cryptomedia
+ * Factory for deploying new markets
  *
  * "Good morning, look at the valedictorian. Scared of the future while I hop in the DeLorean"
  */
 
-contract CryptomediaFactory {
+contract MarketFactory {
     // ======== Immutable storage ========
     address public immutable logic;
     address public immutable bondingCurve;
     // ======== Events ========
-    event CryptomediaDeployed(
+    event MarketDeployed(
         address indexed contractAddress,
         address indexed creator,
-        string cryptomediaName
+        string marketName
     );
 
     // ======== Constructor ========
     constructor(address _bondingCurve) {
         bondingCurve = _bondingCurve;
-        logic = address(new Cryptomedia());
+        logic = address(new Market());
     }
 
     // ======== Deploy contract ========
-    function createCryptomedia(string calldata _name)
+    function createMarket(string calldata _name)
         external
-        returns (address cryptomedia)
+        returns (address market)
     {
-        cryptomedia = Clones.clone(logic);
-        Cryptomedia(cryptomedia).initialize(_name, bondingCurve);
-        emit CryptomediaDeployed(cryptomedia, msg.sender, _name);
+        market = Clones.clone(logic);
+        Market(market).initialize(_name, bondingCurve);
+        emit MarketDeployed(market, msg.sender, _name);
     }
 }

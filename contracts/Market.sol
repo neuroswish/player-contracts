@@ -10,12 +10,12 @@ import "./libraries/Base64.sol";
  * @title Market
  * @author neuroswish
  *
- * Social markets
+ * Social Market
  *
  * "All of you Mario, it's all a game"
  */
 
-contract Cryptomedia is ReentrancyGuardUpgradeable {
+contract Market is ReentrancyGuardUpgradeable {
     // ======== Interface addresses ========
     address public factory; // factory address
     address public bondingCurve; // bonding curve interface address
@@ -54,6 +54,24 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         uint256 tokens,
         uint256 eth
     );
+    event Staked(
+        address indexed staker,
+        address indexed stakee,
+        uint256 amountStaked,
+        uint256 signalTokensMinted
+    );
+    event Unstaked(
+        address indexed staker,
+        address indexed stakee,
+        uint256 amountRemovedFromStakingPool,
+        uint256 signalTokensBurned
+    );
+    event Redeemed(
+        address indexed staker,
+        address indexed stakee,
+        uint256 stakerReward,
+        uint256 stakeeReward
+    );
 
     // ERC-20
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -72,14 +90,18 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         _;
     }
 
+    // ======== Constructor ========
+    /**
+     * @notice Sets MarketFactory address
+     */
     constructor() {
         factory = msg.sender;
     }
 
     // ======== Initializer for new market proxy ========
     /**
-     * @notice Check to see if address holds tokens
-     * @dev Sets reserveRatio, ppm, name, and bondingCurve address; called by factory at time of deployment
+     * @notice Initialize a new market
+     * @dev Sets reserveRatio, ppm, fee, name, and bondingCurve address; called by factory at time of deployment
      */
     function initialize(string calldata _name, address _bondingCurve)
         public
@@ -96,92 +118,11 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     }
 
     // ======== Functions ========
-
-    /**
-     * @notice Stake tokens to a user
-     * @dev Emits a Staked event upon success; callable by holders
-     */
-    function stake(address _user, uint256 _amount) public holder(msg.sender) {
-        require(balanceOf[_user] > 0, "NOT IN NETWORK");
-        require(
-            _amount > 0 && _amount >= balanceOf[msg.sender],
-            "INVALID AMOUNT"
-        );
-        // calculate signal provider tokens
-        uint256 signal;
-        if (signalTokenSupply == 0) {
-            signal = _amount;
-        } else {
-            signal = (_amount * signalTokenSupply) / balanceOf[address(this)];
-        }
-        require(signal > 0, "INSUFFICIENT_SIGNAL_MINTED");
-        // add new LP tokens minted to total LP token supply
-        signalTokenSupply += signal;
-        // transfer LP tokens
-        transferFrom(msg.sender, address(this), _amount);
-        totalTokensStakedByUser[msg.sender] += _amount;
-        tokensStakedToUser[msg.sender][_user] += _amount;
-        totalTokensStakedToUser[_user] += _amount;
-    }
-
-    // remove stake from user and burn signal tokens to receive corresponding number of tokens back
-    function unstake(address _user) public holder(msg.sender) nonReentrant {
-        require(tokensStakedToUser[msg.sender][_user] > 0, "NO STAKE");
-        // get number of signal tokens to burn to return stake (should be equal to tokens staked for the user specified)
-        uint256 signalTokensToBurn = tokensStakedToUser[msg.sender][_user];
-        // calculate the number of tokens to send return to the user based on their pro-rata share of the signal token pool
-        uint256 tokensToGetBack = (signalTokensToBurn *
-            balanceOf[address(this)]) / signalTokenSupply;
-        // make sure that number is greater than or equal to the number of staked tokens in the contract
-        require(
-            tokensToGetBack >= balanceOf[address(this)],
-            "INSUFFICIENT SUPPLY"
-        );
-        // send the user the tokens
-        transferFrom(address(this), msg.sender, tokensToGetBack);
-        // deduct the signal tokens from the user's signal token balance
-        signalBalanceOf[msg.sender] -= signalTokensToBurn;
-        // deduct the signal tokens from the total signal token balance
-        signalTokenSupply -= signalTokensToBurn;
-        // set the tokens staked to the specified user by msg.sender to 0
-        tokensStakedToUser[msg.sender][_user] = 0;
-    }
-
-    // should be callable by staker or contributor
-    // reward tokens (inflationary minted) have to be added to the same staking pool (aka balanceOf[address(this)])
-    function redeem(address _staker, address _contributor)
-        public
-        holder(msg.sender)
-    {
-        require(msg.sender == _contributor || msg.sender == _staker);
-        require(tokensStakedToUser[_staker][_contributor] > 0, "NO STAKE");
-        // calculate number of signal tokens
-        uint256 signalTokens = tokensStakedToUser[_staker][_contributor];
-        // calculate the number of tokens to return to the staker based on their pro-rata share of the signal token pool
-        uint256 tokensToGetBack = (signalTokens * balanceOf[address(this)]) /
-            signalTokenSupply;
-        // make sure that number is greater than or equal to the number of staked tokens in the contract
-        require(
-            tokensToGetBack >= balanceOf[address(this)],
-            "INSUFFICIENT SUPPLY"
-        );
-        // calculate profit to redeem
-        uint256 profit = tokensToGetBack - signalTokens;
-        // if there's no profit, then nothing to redeem; revert
-        require(profit > 0, "NOTHING TO REDEEM");
-        // calculate equal reward for staker and contributor
-        uint256 reward = profit / 2;
-        // transfer tokens to staker and contributor from staking pool supply
-        // the associated profit from this relationship is now taken out of the staking pool
-        transferFrom(address(this), _contributor, reward);
-        transferFrom(address(this), _staker, reward);
-    }
-
     /**
      * @notice Buy market tokens with ETH
      * @dev Emits a Buy event upon success; callable by anyone
      */
-    function buy(uint256 _price, uint256 _minTokensReturned) public payable {
+    function buy(uint256 _price, uint256 _minTokensReturned) external payable {
         require(msg.value == _price && msg.value > 0, "INVALID PRICE");
         require(_minTokensReturned > 0, "INVALID SLIPPAGE");
         // calculate tokens returned
@@ -216,7 +157,7 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @dev Emits a Sell event upon success; callable by token holders
      */
     function sell(uint256 _tokens, uint256 _minETHReturned)
-        public
+        external
         holder(msg.sender)
         nonReentrant
     {
@@ -226,6 +167,12 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         );
         require(poolBalance > 0, "PB<0");
         require(_minETHReturned > 0, "INVALID SLIPPAGE");
+        if (_tokens == balanceOf[msg.sender]) {
+            require(
+                signalBalanceOf[msg.sender] == 0,
+                "MUST BURN ALL SIGNAL TOKENS BEFORE SELLING ALL SUPPLY"
+            );
+        }
         // calculate ETH returned
         uint256 ethReturned = IBondingCurve(bondingCurve).calculateSaleReturn(
             totalSupply,
@@ -236,12 +183,102 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
         // burn tokens
         _burn(msg.sender, _tokens);
-        if (balanceOf[msg.sender] == 0) {
-            //removeHolder(msg.sender);
-        }
         poolBalance -= ethReturned;
         sendValue(payable(msg.sender), ethReturned);
         emit Sell(msg.sender, poolBalance, totalSupply, _tokens, ethReturned);
+    }
+
+    /**
+     * @notice Stake tokens to a user to signal importance
+     * @dev Emits a Staked event upon success; callable by holders
+     */
+    function stake(address _stakee, uint256 _amount)
+        external
+        holder(msg.sender)
+    {
+        require(balanceOf[_stakee] > 0, "NOT IN NETWORK");
+        require(
+            _amount > 0 && _amount >= balanceOf[msg.sender],
+            "INVALID AMOUNT"
+        );
+        // calculate signal provider tokens
+        uint256 signal;
+        if (signalTokenSupply == 0) {
+            signal = _amount;
+        } else {
+            signal = (_amount * signalTokenSupply) / balanceOf[address(this)];
+        }
+        require(signal > 0, "INSUFFICIENT_SIGNAL_MINTED");
+        // transfer LP tokens
+        signalBalanceOf[msg.sender] += signal;
+        // add new LP tokens minted to total LP token supply
+        signalTokenSupply += signal;
+        approve(address(this), _amount);
+        transferFrom(msg.sender, address(this), _amount);
+        totalTokensStakedByUser[msg.sender] += _amount;
+        tokensStakedToUser[msg.sender][_stakee] += _amount;
+        totalTokensStakedToUser[_stakee] += _amount;
+        emit Staked(msg.sender, _stakee, _amount, signal);
+    }
+
+    /**
+     * @notice Unstake tokens from a user to remove signal
+     * @dev Emits an Unstaked event upon success & burns signal tokens for the staker-stakee connection; callable by holders
+     */
+    function unstake(address _stakee) external holder(msg.sender) nonReentrant {
+        require(tokensStakedToUser[msg.sender][_stakee] > 0, "NO STAKE");
+        // get number of signal tokens to burn to return stake (should be equal to tokens staked for the user specified)
+        uint256 signalTokensToBurn = tokensStakedToUser[msg.sender][_stakee];
+        // calculate the number of tokens to send return to the user based on their pro-rata share of the signal token pool
+        uint256 tokensToGetBack = (signalTokensToBurn *
+            balanceOf[address(this)]) / signalTokenSupply;
+        // make sure that number is greater than or equal to the number of staked tokens in the contract
+        require(
+            tokensToGetBack >= balanceOf[address(this)],
+            "INSUFFICIENT SUPPLY"
+        );
+        // send the user the tokens
+        transfer(msg.sender, tokensToGetBack);
+        // deduct the signal tokens from the user's signal token balance
+        signalBalanceOf[msg.sender] -= signalTokensToBurn;
+        // deduct the signal tokens from the total signal token balance
+        signalTokenSupply -= signalTokensToBurn;
+        // set the tokens staked to the specified user by msg.sender to 0
+        tokensStakedToUser[msg.sender][_stakee] = 0;
+        emit Unstaked(msg.sender, _stakee, tokensToGetBack, signalTokensToBurn);
+    }
+
+    /**
+     * @notice Redeem reward tokens from a staking connection
+     * @dev Emits a Redeemed event upon success & transfers reward tokens to both staker and stakee; callable by staker or stakee for a staking connection
+     */
+    function redeem(address _staker, address _stakee)
+        external
+        holder(msg.sender)
+    {
+        require(msg.sender == _stakee || msg.sender == _staker);
+        require(tokensStakedToUser[_staker][_stakee] > 0, "NO STAKE");
+        // calculate number of signal tokens
+        uint256 signalTokens = tokensStakedToUser[_staker][_stakee];
+        // calculate the number of tokens to return to the staker based on their pro-rata share of the signal token pool
+        uint256 tokensToGetBack = (signalTokens * balanceOf[address(this)]) /
+            signalTokenSupply;
+        // make sure that number is greater than or equal to the number of staked tokens in the contract
+        require(
+            tokensToGetBack >= balanceOf[address(this)],
+            "INSUFFICIENT SUPPLY"
+        );
+        // calculate profit to redeem
+        uint256 profit = tokensToGetBack - signalTokens;
+        // if there's no profit, then nothing to redeem; revert
+        require(profit > 0, "NOTHING TO REDEEM");
+        // calculate equal reward for staker and contributor
+        uint256 reward = profit / 2;
+        // transfer tokens to staker and contributor from staking pool supply
+        // the associated profit from this relationship is now taken out of the staking pool
+        transfer(_staker, reward);
+        transfer(_stakee, reward);
+        emit Redeemed(_staker, _stakee, profit, profit);
     }
 
     // ============ Public helper functions ============
@@ -260,6 +297,8 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         emit Transfer(address(this), msg.sender, amount);
         require(success);
     }
+
+    // ============ ERC-20 ============
 
     /**
      * @notice Mints tokens
@@ -300,12 +339,13 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         emit Transfer(from, to, value);
     }
 
-    function approve(address spender, uint256 value) private returns (bool) {
+    function approve(address spender, uint256 value) public returns (bool) {
         _approve(msg.sender, spender, value);
         return true;
     }
 
-    function transfer(address to, uint256 value) private returns (bool) {
+    function transfer(address to, uint256 value) public returns (bool) {
+        require(to != address(this), "TRANSFER PROHIBITED");
         _transfer(msg.sender, to, value);
         return true;
     }
@@ -314,7 +354,10 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
         address from,
         address to,
         uint256 value
-    ) private returns (bool) {
+    ) public returns (bool) {
+        if (to == address(this)) {
+            require(msg.sender == address(this), "TRANSFER PROHIBITED");
+        }
         allowance[from][msg.sender] = allowance[from][msg.sender] - value;
         _transfer(from, to, value);
         return true;
