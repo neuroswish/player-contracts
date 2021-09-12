@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.4;
 import "./BondingCurve.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/IBondingCurve.sol";
+import "./interfaces/ISignal.sol";
 import "./libraries/Base64.sol";
 
 /**
@@ -15,13 +17,15 @@ import "./libraries/Base64.sol";
  * "All of you Mario, it's all a game"
  */
 
-contract Market is ReentrancyGuardUpgradeable {
+contract Market is ReentrancyGuard, Initializable {
     // ======== Interface addresses ========
     address public factory; // factory address
     address public bondingCurve; // bonding curve interface address
+    address public signalToken; // signal token address
 
     // ======== Continuous token params ========
-    string public name; // cryptomedia name
+    string public name; // market name
+    string public symbol; // market symbol
     uint32 public reserveRatio; // reserve ratio in ppm
     uint32 public ppm; // token units
     uint256 public poolBalance; // ETH balance in contract pool
@@ -90,31 +94,26 @@ contract Market is ReentrancyGuardUpgradeable {
         _;
     }
 
-    // ======== Constructor ========
-    /**
-     * @notice Sets MarketFactory address
-     */
-    constructor() {
-        factory = msg.sender;
-    }
-
     // ======== Initializer for new market proxy ========
     /**
      * @notice Initialize a new market
      * @dev Sets reserveRatio, ppm, fee, name, and bondingCurve address; called by factory at time of deployment
      */
-    function initialize(string calldata _name, address _bondingCurve)
-        public
-        payable
-        initializer
-    {
+    function initialize(
+        string calldata _name,
+        string calldata _symbol,
+        address _bondingCurve,
+        address _signalToken
+    ) external initializer {
         reserveRatio = 333333;
         ppm = 1000000;
         feePct = (5**17);
         feeBase = (10**18);
         name = _name;
+        symbol = _symbol;
         bondingCurve = _bondingCurve;
-        __ReentrancyGuard_init();
+        signalToken = _signalToken;
+        //__ReentrancyGuard_init();
     }
 
     // ======== Functions ========
