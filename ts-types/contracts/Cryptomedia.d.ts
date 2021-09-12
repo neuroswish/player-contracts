@@ -22,35 +22,25 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface CryptomediaInterface extends ethers.utils.Interface {
   functions: {
-    "allowance(address,address)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
-    "factory()": FunctionFragment;
-    "feeBase()": FunctionFragment;
-    "feePct()": FunctionFragment;
+    "createLayer(string)": FunctionFragment;
+    "created(address)": FunctionFragment;
+    "curateLayer(address)": FunctionFragment;
+    "curated(address)": FunctionFragment;
+    "getLayer(address)": FunctionFragment;
     "initialize(string,address)": FunctionFragment;
     "name()": FunctionFragment;
     "poolBalance()": FunctionFragment;
     "ppm()": FunctionFragment;
-    "redeem(address,address)": FunctionFragment;
+    "removeCreatedLayer()": FunctionFragment;
+    "removeCuratedLayer()": FunctionFragment;
     "reserveRatio()": FunctionFragment;
     "sell(uint256,uint256)": FunctionFragment;
-    "signalBalanceOf(address)": FunctionFragment;
-    "signalTokenSupply()": FunctionFragment;
-    "stake(address,uint256)": FunctionFragment;
-    "tokensStakedToUser(address,address)": FunctionFragment;
     "totalSupply()": FunctionFragment;
-    "totalTokensStakedByUser(address)": FunctionFragment;
-    "totalTokensStakedToUser(address)": FunctionFragment;
-    "unstake(address)": FunctionFragment;
-    "userInteractions(address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "allowance",
-    values: [string, string]
-  ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "bondingCurve",
@@ -60,9 +50,11 @@ interface CryptomediaInterface extends ethers.utils.Interface {
     functionFragment: "buy",
     values: [BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "factory", values?: undefined): string;
-  encodeFunctionData(functionFragment: "feeBase", values?: undefined): string;
-  encodeFunctionData(functionFragment: "feePct", values?: undefined): string;
+  encodeFunctionData(functionFragment: "createLayer", values: [string]): string;
+  encodeFunctionData(functionFragment: "created", values: [string]): string;
+  encodeFunctionData(functionFragment: "curateLayer", values: [string]): string;
+  encodeFunctionData(functionFragment: "curated", values: [string]): string;
+  encodeFunctionData(functionFragment: "getLayer", values: [string]): string;
   encodeFunctionData(
     functionFragment: "initialize",
     values: [string, string]
@@ -74,8 +66,12 @@ interface CryptomediaInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "ppm", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "redeem",
-    values: [string, string]
+    functionFragment: "removeCreatedLayer",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "removeCuratedLayer",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "reserveRatio",
@@ -86,49 +82,27 @@ interface CryptomediaInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "signalBalanceOf",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "signalTokenSupply",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "stake",
-    values: [string, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "tokensStakedToUser",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
   ): string;
-  encodeFunctionData(
-    functionFragment: "totalTokensStakedByUser",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "totalTokensStakedToUser",
-    values: [string]
-  ): string;
-  encodeFunctionData(functionFragment: "unstake", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "userInteractions",
-    values: [string]
-  ): string;
 
-  decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "bondingCurve",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "feeBase", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "feePct", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "createLayer",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "created", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "curateLayer",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "curated", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getLayer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(
@@ -136,54 +110,43 @@ interface CryptomediaInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "ppm", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "redeem", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "removeCreatedLayer",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "removeCuratedLayer",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "reserveRatio",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "sell", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "signalBalanceOf",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "signalTokenSupply",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "stake", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "tokensStakedToUser",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "totalSupply",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "totalTokensStakedByUser",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "totalTokensStakedToUser",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "unstake", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "userInteractions",
     data: BytesLike
   ): Result;
 
   events: {
-    "Approval(address,address,uint256)": EventFragment;
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
+    "CurationAdded(address,address)": EventFragment;
+    "CurationRemoved(address,address)": EventFragment;
+    "LayerCreated(address,string)": EventFragment;
+    "LayerRemoved(address)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
+    "noLongerHolder(address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Buy"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "CurationAdded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "CurationRemoved"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "LayerCreated"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "LayerRemoved"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Sell"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "noLongerHolder"): EventFragment;
 }
 
 export class Cryptomedia extends BaseContract {
@@ -230,12 +193,6 @@ export class Cryptomedia extends BaseContract {
   interface: CryptomediaInterface;
 
   functions: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     bondingCurve(overrides?: CallOverrides): Promise<[string]>;
@@ -246,11 +203,24 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    factory(overrides?: CallOverrides): Promise<[string]>;
+    createLayer(
+      _URI: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
 
-    feeBase(overrides?: CallOverrides): Promise<[BigNumber]>;
+    created(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
 
-    feePct(overrides?: CallOverrides): Promise<[BigNumber]>;
+    curateLayer(
+      _creator: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    curated(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
+
+    getLayer(
+      _user: string,
+      overrides?: CallOverrides
+    ): Promise<[string, string]>;
 
     initialize(
       _name: string,
@@ -264,9 +234,11 @@ export class Cryptomedia extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<[number]>;
 
-    redeem(
-      _staker: string,
-      _contributor: string,
+    removeCreatedLayer(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    removeCuratedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -278,53 +250,8 @@ export class Cryptomedia extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    signalBalanceOf(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    signalTokenSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    stake(
-      _user: string,
-      _amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    tokensStakedToUser(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    totalTokensStakedByUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    totalTokensStakedToUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    unstake(
-      _user: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    userInteractions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
   };
-
-  allowance(
-    arg0: string,
-    arg1: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
 
   balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -336,11 +263,21 @@ export class Cryptomedia extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  factory(overrides?: CallOverrides): Promise<string>;
+  createLayer(
+    _URI: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
-  feeBase(overrides?: CallOverrides): Promise<BigNumber>;
+  created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
-  feePct(overrides?: CallOverrides): Promise<BigNumber>;
+  curateLayer(
+    _creator: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  curated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
+  getLayer(_user: string, overrides?: CallOverrides): Promise<[string, string]>;
 
   initialize(
     _name: string,
@@ -354,9 +291,11 @@ export class Cryptomedia extends BaseContract {
 
   ppm(overrides?: CallOverrides): Promise<number>;
 
-  redeem(
-    _staker: string,
-    _contributor: string,
+  removeCreatedLayer(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  removeCuratedLayer(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -368,48 +307,9 @@ export class Cryptomedia extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  signalBalanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-  signalTokenSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
-  stake(
-    _user: string,
-    _amount: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  tokensStakedToUser(
-    arg0: string,
-    arg1: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
-  totalTokensStakedByUser(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
-  totalTokensStakedToUser(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
-  unstake(
-    _user: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  userInteractions(arg0: string, overrides?: CallOverrides): Promise<string>;
-
   callStatic: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<string>;
@@ -420,11 +320,18 @@ export class Cryptomedia extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    factory(overrides?: CallOverrides): Promise<string>;
+    createLayer(_URI: string, overrides?: CallOverrides): Promise<void>;
 
-    feeBase(overrides?: CallOverrides): Promise<BigNumber>;
+    created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
-    feePct(overrides?: CallOverrides): Promise<BigNumber>;
+    curateLayer(_creator: string, overrides?: CallOverrides): Promise<void>;
+
+    curated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
+    getLayer(
+      _user: string,
+      overrides?: CallOverrides
+    ): Promise<[string, string]>;
 
     initialize(
       _name: string,
@@ -438,11 +345,9 @@ export class Cryptomedia extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<number>;
 
-    redeem(
-      _staker: string,
-      _contributor: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    removeCreatedLayer(overrides?: CallOverrides): Promise<void>;
+
+    removeCuratedLayer(overrides?: CallOverrides): Promise<void>;
 
     reserveRatio(overrides?: CallOverrides): Promise<number>;
 
@@ -452,52 +357,10 @@ export class Cryptomedia extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    signalBalanceOf(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    signalTokenSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
-    stake(
-      _user: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    tokensStakedToUser(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
-    totalTokensStakedByUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    totalTokensStakedToUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    unstake(_user: string, overrides?: CallOverrides): Promise<void>;
-
-    userInteractions(arg0: string, overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
-    Approval(
-      owner?: string | null,
-      spender?: string | null,
-      value?: null
-    ): TypedEventFilter<
-      [string, string, BigNumber],
-      { owner: string; spender: string; value: BigNumber }
-    >;
-
     Buy(
       buyer?: string | null,
       poolBalance?: null,
@@ -514,6 +377,34 @@ export class Cryptomedia extends BaseContract {
         price: BigNumber;
       }
     >;
+
+    CurationAdded(
+      curator?: string | null,
+      layerCreator?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { curator: string; layerCreator: string }
+    >;
+
+    CurationRemoved(
+      curator?: string | null,
+      layerCreator?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { curator: string; layerCreator: string }
+    >;
+
+    LayerCreated(
+      creator?: string | null,
+      contentURI?: null
+    ): TypedEventFilter<
+      [string, string],
+      { creator: string; contentURI: string }
+    >;
+
+    LayerRemoved(
+      creator?: string | null
+    ): TypedEventFilter<[string], { creator: string }>;
 
     Sell(
       seller?: string | null,
@@ -540,15 +431,13 @@ export class Cryptomedia extends BaseContract {
       [string, string, BigNumber],
       { from: string; to: string; value: BigNumber }
     >;
+
+    noLongerHolder(
+      user?: string | null
+    ): TypedEventFilter<[string], { user: string }>;
   };
 
   estimateGas: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
@@ -559,11 +448,21 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    factory(overrides?: CallOverrides): Promise<BigNumber>;
+    createLayer(
+      _URI: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
 
-    feeBase(overrides?: CallOverrides): Promise<BigNumber>;
+    created(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    feePct(overrides?: CallOverrides): Promise<BigNumber>;
+    curateLayer(
+      _creator: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    curated(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    getLayer(_user: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       _name: string,
@@ -577,9 +476,11 @@ export class Cryptomedia extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<BigNumber>;
 
-    redeem(
-      _staker: string,
-      _contributor: string,
+    removeCreatedLayer(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    removeCuratedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -591,55 +492,10 @@ export class Cryptomedia extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    signalBalanceOf(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    signalTokenSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
-    stake(
-      _user: string,
-      _amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    tokensStakedToUser(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
-
-    totalTokensStakedByUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    totalTokensStakedToUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    unstake(
-      _user: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    userInteractions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     balanceOf(
       arg0: string,
       overrides?: CallOverrides
@@ -653,11 +509,30 @@ export class Cryptomedia extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    factory(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    createLayer(
+      _URI: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
 
-    feeBase(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    created(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    feePct(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    curateLayer(
+      _creator: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    curated(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getLayer(
+      _user: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     initialize(
       _name: string,
@@ -671,9 +546,11 @@ export class Cryptomedia extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    redeem(
-      _staker: string,
-      _contributor: string,
+    removeCreatedLayer(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    removeCuratedLayer(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -685,45 +562,6 @@ export class Cryptomedia extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    signalBalanceOf(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    signalTokenSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    stake(
-      _user: string,
-      _amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    tokensStakedToUser(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    totalTokensStakedByUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    totalTokensStakedToUser(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    unstake(
-      _user: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    userInteractions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
   };
 }

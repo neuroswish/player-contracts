@@ -13,22 +13,6 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
-      name: "AccessControl",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.AccessControl__factory>;
-    getContractFactory(
-      name: "IAccessControl",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IAccessControl__factory>;
-    getContractFactory(
-      name: "ERC165",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ERC165__factory>;
-    getContractFactory(
-      name: "IERC165",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IERC165__factory>;
-    getContractFactory(
       name: "BondingCurve",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BondingCurve__factory>;
@@ -41,29 +25,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.CryptomediaFactory__factory>;
     getContractFactory(
+      name: "Greeter",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Greeter__factory>;
+    getContractFactory(
       name: "IBondingCurve",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBondingCurve__factory>;
     getContractFactory(
-      name: "ISignal",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ISignal__factory>;
-    getContractFactory(
-      name: "Market",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Market__factory>;
-    getContractFactory(
-      name: "MarketFactory",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.MarketFactory__factory>;
-    getContractFactory(
       name: "Power",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Power__factory>;
-    getContractFactory(
-      name: "Signal",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Signal__factory>;
 
     // default types
     getContractFactory(

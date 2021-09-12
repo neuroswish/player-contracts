@@ -10,25 +10,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint32",
-        name: "_reserveRatio",
-        type: "uint32",
-      },
-    ],
-    name: "calculateInitializationPrice",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "uint256",
         name: "_price",
         type: "uint256",
@@ -48,40 +29,6 @@ const _abi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_supply",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_poolBalance",
-        type: "uint256",
-      },
-      {
-        internalType: "uint32",
-        name: "_reserveRatio",
-        type: "uint32",
-      },
-      {
-        internalType: "uint256",
-        name: "_tokens",
-        type: "uint256",
-      },
-    ],
-    name: "calculatePrice",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
