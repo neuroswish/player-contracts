@@ -18,7 +18,7 @@ import "./libraries/Base64.sol";
 contract Cryptomedia is ReentrancyGuardUpgradeable {
     // ======== Interface addresses ========
     address public bondingCurve; // bonding curve interface address
-    address public parameters;
+    string[] public choices; // user choices
 
     // ======== Continuous token params ========
     string public name; // cryptomedia name
@@ -57,7 +57,6 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     event LayerCreated(address indexed creator, string text);
     event LayerUpdated(address indexed creator, string newText);
     event LayerRemoved(address indexed creator);
-    event noLongerHolder(address indexed user);
 
     // ======== Modifiers ========
     /**
@@ -81,15 +80,16 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
      * @notice Check to see if address holds tokens
      * @dev Sets reserveRatio, ppm, name, and bondingCurve address
      */
-    function initialize(string calldata _name, address _bondingCurve)
-        public
-        payable
-        initializer
-    {
+    function initialize(
+        string calldata _name,
+        address _bondingCurve,
+        string[] calldata _choices
+    ) public payable initializer {
         reserveRatio = 333333;
         ppm = 1000000;
         name = _name;
         bondingCurve = _bondingCurve;
+        choices = _choices;
         __ReentrancyGuard_init();
     }
 
@@ -102,31 +102,28 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
     function buy(
         address _creator,
         uint256 _price,
-        uint256 _maxPrice
+        uint256 _minTokensReturned
     ) private {
+        require(msg.value == _price && msg.value > 0, "INVALID PRICE");
+        require(_minTokensReturned > 0, "INVALID SLIPPAGE");
         // calculate tokens returned
-        uint256 priceRequired;
+        uint256 tokensReturned;
         if (totalSupply == 0) {
-            priceRequired = IBondingCurve(bondingCurve)
-                .calculateInitializationPrice(reserveRatio);
-            require(priceRequired <= _maxPrice, "SLIPPAGE");
+            tokensReturned = IBondingCurve(bondingCurve)
+                .calculateInitializationReturn(_price, reserveRatio);
         } else {
-            priceRequired = IBondingCurve(bondingCurve).calculatePrice(
-                totalSupply,
-                poolBalance,
-                reserveRatio,
-                1
-            );
-            require(priceRequired <= _maxPrice, "SLIPPAGE");
+            tokensReturned = IBondingCurve(bondingCurve)
+                .calculatePurchaseReturn(
+                    totalSupply,
+                    poolBalance,
+                    reserveRatio,
+                    _price
+                );
         }
-        require(_price >= priceRequired, "INSUFFICIENT FUNDS");
-        // mint tokens
-        _mint(_creator, 1);
+        // mint tokens for buyer
+        _mint(_creator, tokensReturned);
         poolBalance += _price;
-        if (_price > priceRequired) {
-            sendValue(_creator, (_price - priceRequired));
-        }
-        emit Buy(_creator, poolBalance, totalSupply, 1, _price);
+        emit Buy(msg.sender, poolBalance, totalSupply, tokensReturned, _price);
     }
 
     /**
@@ -141,57 +138,60 @@ contract Cryptomedia is ReentrancyGuardUpgradeable {
             totalSupply,
             poolBalance,
             reserveRatio,
-            1
+            balanceOf[_creator]
         );
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
         // burn tokens
-        _burn(_creator, 1);
+        uint256 sellAmt = balanceOf[_creator];
+        _burn(_creator, sellAmt);
         poolBalance -= ethReturned;
         sendValue(_creator, ethReturned);
-        emit Sell(_creator, poolBalance, totalSupply, 1, ethReturned);
+        emit Sell(_creator, poolBalance, totalSupply, sellAmt, ethReturned);
     }
 
     /**
      * @notice Add a cryptomedia layer
      * @dev Emits a LayerAdded event upon success; callable by token holders
      */
-    function createLayer(string memory _text, uint256 _maxPrice)
+    function createLayer(uint256 _choicesIndex, uint256 _minTokensReturned)
         public
         payable
     {
         require(msg.value > 0, "INVALID PRICE");
-        require(_maxPrice > 0, "INVALID SLIPPAGE");
+        require(_minTokensReturned > 0, "INVALID SLIPPAGE");
         require(!created[msg.sender], "ALREADY CREATED");
-        require(bytes(_text).length < 300, "INPUT TOO LARGE");
-        buy(msg.sender, msg.value, _maxPrice);
+        require(_choicesIndex <= choices.length, "OUT OF BOUNDS");
+        //require(bytes(_text).length < 300, "INPUT TOO LARGE");
+        buy(msg.sender, msg.value, _minTokensReturned);
         Layer memory layer;
-        layer.text = _text;
+        string memory text = choices[_choicesIndex];
+        layer.text = text;
         layer.creator = msg.sender;
         addressToLayer[msg.sender] = layer;
         created[msg.sender] = true;
-        emit LayerCreated(msg.sender, _text);
+        emit LayerCreated(msg.sender, text);
     }
 
-    /**
-     * @notice Update a cryptomedia layer
-     * @dev Emits a LayerUpdated event upon success; callable by token-holding creators
-     */
-    function updateLayer(string memory _newText)
-        public
-        holder(msg.sender)
-        creator(msg.sender)
-    {
-        require(bytes(_newText).length < 300, "INPUT TOO LARGE");
-        addressToLayer[msg.sender].text = _newText;
-        emit LayerUpdated(msg.sender, _newText);
-    }
+    // /**
+    //  * @notice Update a cryptomedia layer
+    //  * @dev Emits a LayerUpdated event upon success; callable by token-holding creators
+    //  */
+    // function updateLayer(string memory _newText)
+    //     public
+    //     holder(msg.sender)
+    //     creator(msg.sender)
+    // {
+    //     require(bytes(_newText).length < 300, "INPUT TOO LARGE");
+    //     addressToLayer[msg.sender].text = _newText;
+    //     emit LayerUpdated(msg.sender, _newText);
+    // }
 
     /**
      * @notice Remove a cryptomedia layer
      * @dev Emits a LayerRemoved event upon success; callable by token-holding creators
      */
 
-    function removeLayer(uint256 _minETHReturned)
+    function burnLayer(uint256 _minETHReturned)
         public
         holder(msg.sender)
         creator(msg.sender)

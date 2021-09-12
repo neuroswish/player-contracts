@@ -31,12 +31,12 @@ contract CryptomediaFactory {
     }
 
     // ======== Deploy contract ========
-    function createCryptomedia(string calldata _name)
-        external
-        returns (address cryptomedia)
-    {
+    function createCryptomedia(
+        string calldata _name,
+        string[] calldata _choices
+    ) external returns (address cryptomedia) {
         cryptomedia = Clones.clone(logic);
-        Cryptomedia(cryptomedia).initialize(_name, bondingCurve);
+        Cryptomedia(cryptomedia).initialize(_name, bondingCurve, _choices);
         emit CryptomediaDeployed(cryptomedia, msg.sender, _name);
     }
 }
