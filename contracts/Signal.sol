@@ -31,31 +31,37 @@ contract Signal is ISignal, Initializable, AccessControl {
         _setupRole(OPERATOR, _operator);
     }
 
-    function getName() external view returns (string memory) {
+    function getName() external view override returns (string memory) {
         return name;
     }
 
-    function getSymbol() external view returns (string memory) {
+    function getSymbol() external view override returns (string memory) {
         return symbol;
     }
 
-    function getTotalSupply() external view returns (uint256) {
+    function getTotalSupply() external view override returns (uint256) {
         return totalSupply;
     }
 
-    function getBalanceOf(address _owner) external view returns (uint256) {
+    function getBalanceOf(address _owner)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return balanceOf[_owner];
     }
 
     function getAllowance(address _owner, address _spender)
         external
         view
+        override
         returns (uint256)
     {
         return allowance[_owner][_spender];
     }
 
-    function _mint(address _to, uint256 _value) external {
+    function mint(address _to, uint256 _value) external override {
         require(
             hasRole(ADMIN, msg.sender) || hasRole(OPERATOR, msg.sender),
             "NOT AUTHORIZED"
@@ -65,7 +71,7 @@ contract Signal is ISignal, Initializable, AccessControl {
         emit Transfer(address(0), _to, _value);
     }
 
-    function _burn(address _from, uint256 _value) external {
+    function burn(address _from, uint256 _value) external override {
         require(
             hasRole(ADMIN, msg.sender) || hasRole(OPERATOR, msg.sender),
             "NOT AUTHORIZED"

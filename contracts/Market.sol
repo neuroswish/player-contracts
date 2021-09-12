@@ -201,23 +201,24 @@ contract Market is ReentrancyGuard, Initializable {
             "INVALID AMOUNT"
         );
         // calculate number signal provider tokens to mint
-        uint256 signal;
-        if (signalTokenSupply == 0) {
-            signal = _amount;
+        uint256 signalAmount;
+        if (ISignal(signalToken).getTotalSupply() == 0) {
+            signalAmount = _amount;
         } else {
-            signal = (_amount * signalTokenSupply) / balanceOf[address(this)];
+            signalAmount =
+                (_amount * ISignal(signalToken).getTotalSupply()) /
+                balanceOf[address(this)];
         }
-        require(signal > 0, "INSUFFICIENT_SIGNAL_MINTED");
-        // transfer LP tokens
-        signalBalanceOf[msg.sender] += signal;
-        // add new LP tokens minted to total LP token supply
-        signalTokenSupply += signal;
+        require(signalAmount > 0, "INSUFFICIENT_SIGNAL_MINTED");
+        // mint signal tokens
+        ISignal(signalToken).mint(msg.sender, signalAmount);
+        // staker must approve contract to transfer tokens
         approve(address(this), _amount);
         transferFrom(msg.sender, address(this), _amount);
         totalTokensStakedByUser[msg.sender] += _amount;
         tokensStakedToUser[msg.sender][_stakee] += _amount;
         totalTokensStakedToUser[_stakee] += _amount;
-        emit Staked(msg.sender, _stakee, _amount, signal);
+        emit Staked(msg.sender, _stakee, _amount, signalAmount);
     }
 
     /**
@@ -227,24 +228,22 @@ contract Market is ReentrancyGuard, Initializable {
     function unstake(address _stakee) external holder(msg.sender) nonReentrant {
         require(tokensStakedToUser[msg.sender][_stakee] > 0, "NO STAKE");
         // get number of signal tokens to burn to return stake (should be equal to tokens staked for the user specified)
-        uint256 signalTokensToBurn = tokensStakedToUser[msg.sender][_stakee];
+        uint256 signalAmount = tokensStakedToUser[msg.sender][_stakee];
         // calculate the number of tokens to send return to the user based on their pro-rata share of the signal token pool
-        uint256 tokensToGetBack = (signalTokensToBurn *
-            balanceOf[address(this)]) / signalTokenSupply;
+        uint256 tokensToReturn = (signalAmount * balanceOf[address(this)]) /
+            signalTokenSupply;
         // make sure that number is greater than or equal to the number of staked tokens in the contract
         require(
-            tokensToGetBack >= balanceOf[address(this)],
+            tokensToReturn >= balanceOf[address(this)],
             "INSUFFICIENT SUPPLY"
         );
         // send the user the tokens
-        transfer(msg.sender, tokensToGetBack);
+        transfer(msg.sender, tokensToReturn);
         // deduct the signal tokens from the user's signal token balance
-        signalBalanceOf[msg.sender] -= signalTokensToBurn;
-        // deduct the signal tokens from the total signal token balance
-        signalTokenSupply -= signalTokensToBurn;
+        ISignal(signalToken).burn(msg.sender, signalAmount);
         // set the tokens staked to the specified user by msg.sender to 0
         tokensStakedToUser[msg.sender][_stakee] = 0;
-        emit Unstaked(msg.sender, _stakee, tokensToGetBack, signalTokensToBurn);
+        emit Unstaked(msg.sender, _stakee, tokensToReturn, signalAmount);
     }
 
     /**
@@ -258,17 +257,17 @@ contract Market is ReentrancyGuard, Initializable {
         require(msg.sender == _stakee || msg.sender == _staker);
         require(tokensStakedToUser[_staker][_stakee] > 0, "NO STAKE");
         // calculate number of signal tokens
-        uint256 signalTokens = tokensStakedToUser[_staker][_stakee];
+        uint256 signalAmount = tokensStakedToUser[_staker][_stakee];
         // calculate the number of tokens to return to the staker based on their pro-rata share of the signal token pool
-        uint256 tokensToGetBack = (signalTokens * balanceOf[address(this)]) /
-            signalTokenSupply;
+        uint256 tokensToReturn = (signalAmount * balanceOf[address(this)]) /
+            ISignal(signalToken).getTotalSupply();
         // make sure that number is greater than or equal to the number of staked tokens in the contract
         require(
-            tokensToGetBack >= balanceOf[address(this)],
+            tokensToReturn >= balanceOf[address(this)],
             "INSUFFICIENT SUPPLY"
         );
         // calculate profit to redeem
-        uint256 profit = tokensToGetBack - signalTokens;
+        uint256 profit = tokensToReturn - signalAmount;
         // if there's no profit, then nothing to redeem; revert
         require(profit > 0, "NOTHING TO REDEEM");
         // calculate equal reward for staker and contributor
@@ -279,8 +278,6 @@ contract Market is ReentrancyGuard, Initializable {
         transfer(_stakee, reward);
         emit Redeemed(_staker, _stakee, profit, profit);
     }
-
-    // ============ Public helper functions ============
 
     // ============ Utility ============
 

@@ -22,6 +22,10 @@ interface ISignal {
         view
         returns (uint256);
 
+    function mint(address _to, uint256 _value) external;
+
+    function burn(address _from, uint256 _value) external;
+
     function approve(address spender, uint256 value) external returns (bool);
 
     function transfer(address to, uint256 value) external returns (bool);

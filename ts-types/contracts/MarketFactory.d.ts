@@ -22,8 +22,9 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 interface MarketFactoryInterface extends ethers.utils.Interface {
   functions: {
     "bondingCurve()": FunctionFragment;
-    "createMarket(string)": FunctionFragment;
+    "createMarket(string,string)": FunctionFragment;
     "logic()": FunctionFragment;
+    "signalToken()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -32,9 +33,13 @@ interface MarketFactoryInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "createMarket",
-    values: [string]
+    values: [string, string]
   ): string;
   encodeFunctionData(functionFragment: "logic", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "signalToken",
+    values?: undefined
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "bondingCurve",
@@ -45,12 +50,16 @@ interface MarketFactoryInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "logic", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "signalToken",
+    data: BytesLike
+  ): Result;
 
   events: {
-    "marketDeployed(address,address,string)": EventFragment;
+    "MarketDeployed(address,address,string,string,address,address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "marketDeployed"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "MarketDeployed"): EventFragment;
 }
 
 export class MarketFactory extends BaseContract {
@@ -101,37 +110,59 @@ export class MarketFactory extends BaseContract {
 
     createMarket(
       _name: string,
+      _symbol: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     logic(overrides?: CallOverrides): Promise<[string]>;
+
+    signalToken(overrides?: CallOverrides): Promise<[string]>;
   };
 
   bondingCurve(overrides?: CallOverrides): Promise<string>;
 
   createMarket(
     _name: string,
+    _symbol: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   logic(overrides?: CallOverrides): Promise<string>;
 
+  signalToken(overrides?: CallOverrides): Promise<string>;
+
   callStatic: {
     bondingCurve(overrides?: CallOverrides): Promise<string>;
 
-    createMarket(_name: string, overrides?: CallOverrides): Promise<string>;
+    createMarket(
+      _name: string,
+      _symbol: string,
+      overrides?: CallOverrides
+    ): Promise<[string, string] & { market: string; signal: string }>;
 
     logic(overrides?: CallOverrides): Promise<string>;
+
+    signalToken(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
-    marketDeployed(
+    MarketDeployed(
       contractAddress?: string | null,
       creator?: string | null,
-      marketName?: null
+      marketName?: null,
+      marketSymbol?: null,
+      bondingCurve?: null,
+      signalToken?: null
     ): TypedEventFilter<
-      [string, string, string],
-      { contractAddress: string; creator: string; marketName: string }
+      [string, string, string, string, string, string],
+      {
+        contractAddress: string;
+        creator: string;
+        marketName: string;
+        marketSymbol: string;
+        bondingCurve: string;
+        signalToken: string;
+      }
     >;
   };
 
@@ -140,10 +171,13 @@ export class MarketFactory extends BaseContract {
 
     createMarket(
       _name: string,
+      _symbol: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     logic(overrides?: CallOverrides): Promise<BigNumber>;
+
+    signalToken(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -151,9 +185,12 @@ export class MarketFactory extends BaseContract {
 
     createMarket(
       _name: string,
+      _symbol: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     logic(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    signalToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

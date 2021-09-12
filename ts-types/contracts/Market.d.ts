@@ -22,35 +22,43 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface MarketInterface extends ethers.utils.Interface {
   functions: {
-    "addLayer(string)": FunctionFragment;
-    "addressToCuratedLayers(address,uint256)": FunctionFragment;
-    "addressToLayer(address)": FunctionFragment;
+    "allowance(address,address)": FunctionFragment;
+    "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
     "buy(uint256,uint256)": FunctionFragment;
-    "created(address)": FunctionFragment;
-    "curate(address)": FunctionFragment;
-    "initialize(string,address)": FunctionFragment;
-    "isCuratingLayer(address,address)": FunctionFragment;
-    "layers(uint256)": FunctionFragment;
+    "factory()": FunctionFragment;
+    "feeBase()": FunctionFragment;
+    "feePct()": FunctionFragment;
+    "initialize(string,string,address,address)": FunctionFragment;
     "name()": FunctionFragment;
     "poolBalance()": FunctionFragment;
     "ppm()": FunctionFragment;
-    "removeCuration(address)": FunctionFragment;
-    "removeLayer()": FunctionFragment;
+    "redeem(address,address)": FunctionFragment;
     "reserveRatio()": FunctionFragment;
     "sell(uint256,uint256)": FunctionFragment;
+    "signalBalanceOf(address)": FunctionFragment;
+    "signalToken()": FunctionFragment;
+    "signalTokenSupply()": FunctionFragment;
+    "stake(address,uint256)": FunctionFragment;
+    "symbol()": FunctionFragment;
+    "tokensStakedToUser(address,address)": FunctionFragment;
     "totalSupply()": FunctionFragment;
+    "totalTokensStakedByUser(address)": FunctionFragment;
+    "totalTokensStakedToUser(address)": FunctionFragment;
+    "transfer(address,uint256)": FunctionFragment;
+    "transferFrom(address,address,uint256)": FunctionFragment;
+    "unstake(address)": FunctionFragment;
+    "userInteractions(address)": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "addLayer", values: [string]): string;
   encodeFunctionData(
-    functionFragment: "addressToCuratedLayers",
-    values: [string, BigNumberish]
+    functionFragment: "allowance",
+    values: [string, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "addressToLayer",
-    values: [string]
+    functionFragment: "approve",
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
@@ -61,19 +69,12 @@ interface MarketInterface extends ethers.utils.Interface {
     functionFragment: "buy",
     values: [BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "created", values: [string]): string;
-  encodeFunctionData(functionFragment: "curate", values: [string]): string;
+  encodeFunctionData(functionFragment: "factory", values?: undefined): string;
+  encodeFunctionData(functionFragment: "feeBase", values?: undefined): string;
+  encodeFunctionData(functionFragment: "feePct", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isCuratingLayer",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "layers",
-    values: [BigNumberish]
+    values: [string, string, string, string]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(
@@ -82,12 +83,8 @@ interface MarketInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "ppm", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "removeCuration",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "removeLayer",
-    values?: undefined
+    functionFragment: "redeem",
+    values: [string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "reserveRatio",
@@ -98,76 +95,134 @@ interface MarketInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "signalBalanceOf",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "signalToken",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "signalTokenSupply",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "stake",
+    values: [string, BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "tokensStakedToUser",
+    values: [string, string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "totalTokensStakedByUser",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "totalTokensStakedToUser",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transfer",
+    values: [string, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transferFrom",
+    values: [string, string, BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: "unstake", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "userInteractions",
+    values: [string]
+  ): string;
 
-  decodeFunctionResult(functionFragment: "addLayer", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "addressToCuratedLayers",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "addressToLayer",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "bondingCurve",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "created", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "curate", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "feeBase", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "feePct", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "isCuratingLayer",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "layers", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "poolBalance",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "ppm", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "removeCuration",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "removeLayer",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "redeem", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "reserveRatio",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "sell", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "signalBalanceOf",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "signalToken",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "signalTokenSupply",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "stake", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tokensStakedToUser",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "totalSupply",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "totalTokensStakedByUser",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "totalTokensStakedToUser",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "transfer", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "transferFrom",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "unstake", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "userInteractions",
     data: BytesLike
   ): Result;
 
   events: {
     "Approval(address,address,uint256)": EventFragment;
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
-    "CurationAdded(address,address)": EventFragment;
-    "CurationRemoved(address,address)": EventFragment;
-    "LayerAdded(address,string)": EventFragment;
-    "LayerRemoved(address)": EventFragment;
+    "Redeemed(address,address,uint256,uint256)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
+    "Staked(address,address,uint256,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
+    "Unstaked(address,address,uint256,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Buy"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "CurationAdded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "CurationRemoved"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "LayerAdded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "LayerRemoved"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Redeemed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Sell"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Staked"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Unstaked"): EventFragment;
 }
 
 export class Market extends BaseContract {
@@ -214,21 +269,17 @@ export class Market extends BaseContract {
   interface: MarketInterface;
 
   functions: {
-    addLayer(
-      _URI: string,
+    allowance(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    approve(
+      spender: string,
+      value: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    addressToCuratedLayers(
-      arg0: string,
-      arg1: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
-
-    addressToLayer(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
 
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -240,29 +291,19 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    created(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
+    factory(overrides?: CallOverrides): Promise<[string]>;
 
-    curate(
-      _creator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+    feeBase(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    feePct(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     initialize(
       _name: string,
+      _symbol: string,
       _bondingCurve: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      _signalToken: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
-
-    layers(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
 
     name(overrides?: CallOverrides): Promise<[string]>;
 
@@ -270,12 +311,9 @@ export class Market extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<[number]>;
 
-    removeCuration(
-      _creator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    removeLayer(
+    redeem(
+      _staker: string,
+      _stakee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -287,24 +325,76 @@ export class Market extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    signalBalanceOf(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    signalToken(overrides?: CallOverrides): Promise<[string]>;
+
+    signalTokenSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    stake(
+      _stakee: string,
+      _amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    symbol(overrides?: CallOverrides): Promise<[string]>;
+
+    tokensStakedToUser(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    totalTokensStakedByUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    totalTokensStakedToUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    transfer(
+      to: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    unstake(
+      _stakee: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    userInteractions(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
   };
 
-  addLayer(
-    _URI: string,
+  allowance(
+    arg0: string,
+    arg1: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  approve(
+    spender: string,
+    value: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  addressToCuratedLayers(
-    arg0: string,
-    arg1: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<[string, string] & { creator: string; URI: string }>;
-
-  addressToLayer(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<[string, string] & { creator: string; URI: string }>;
 
   balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -316,29 +406,19 @@ export class Market extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+  factory(overrides?: CallOverrides): Promise<string>;
 
-  curate(
-    _creator: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+  feeBase(overrides?: CallOverrides): Promise<BigNumber>;
+
+  feePct(overrides?: CallOverrides): Promise<BigNumber>;
 
   initialize(
     _name: string,
+    _symbol: string,
     _bondingCurve: string,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    _signalToken: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  isCuratingLayer(
-    arg0: string,
-    arg1: string,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
-
-  layers(
-    arg0: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<[string, string] & { creator: string; URI: string }>;
 
   name(overrides?: CallOverrides): Promise<string>;
 
@@ -346,12 +426,9 @@ export class Market extends BaseContract {
 
   ppm(overrides?: CallOverrides): Promise<number>;
 
-  removeCuration(
-    _creator: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  removeLayer(
+  redeem(
+    _staker: string,
+    _stakee: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -363,21 +440,70 @@ export class Market extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  signalBalanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+  signalToken(overrides?: CallOverrides): Promise<string>;
+
+  signalTokenSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
+  stake(
+    _stakee: string,
+    _amount: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  symbol(overrides?: CallOverrides): Promise<string>;
+
+  tokensStakedToUser(
+    arg0: string,
+    arg1: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
+  totalTokensStakedByUser(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  totalTokensStakedToUser(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  transfer(
+    to: string,
+    value: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  transferFrom(
+    from: string,
+    to: string,
+    value: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  unstake(
+    _stakee: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  userInteractions(arg0: string, overrides?: CallOverrides): Promise<string>;
+
   callStatic: {
-    addLayer(_URI: string, overrides?: CallOverrides): Promise<boolean>;
-
-    addressToCuratedLayers(
+    allowance(
       arg0: string,
-      arg1: BigNumberish,
+      arg1: string,
       overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
+    ): Promise<BigNumber>;
 
-    addressToLayer(
-      arg0: string,
+    approve(
+      spender: string,
+      value: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
+    ): Promise<boolean>;
 
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -387,28 +513,21 @@ export class Market extends BaseContract {
       _price: BigNumberish,
       _minTokensReturned: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<boolean>;
+    ): Promise<void>;
 
-    created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+    factory(overrides?: CallOverrides): Promise<string>;
 
-    curate(_creator: string, overrides?: CallOverrides): Promise<boolean>;
+    feeBase(overrides?: CallOverrides): Promise<BigNumber>;
+
+    feePct(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       _name: string,
+      _symbol: string,
       _bondingCurve: string,
+      _signalToken: string,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
-    layers(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string, string] & { creator: string; URI: string }>;
 
     name(overrides?: CallOverrides): Promise<string>;
 
@@ -416,12 +535,11 @@ export class Market extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<number>;
 
-    removeCuration(
-      _creator: string,
+    redeem(
+      _staker: string,
+      _stakee: string,
       overrides?: CallOverrides
-    ): Promise<boolean>;
-
-    removeLayer(overrides?: CallOverrides): Promise<boolean>;
+    ): Promise<void>;
 
     reserveRatio(overrides?: CallOverrides): Promise<number>;
 
@@ -429,9 +547,59 @@ export class Market extends BaseContract {
       _tokens: BigNumberish,
       _minETHReturned: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<boolean>;
+    ): Promise<void>;
+
+    signalBalanceOf(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    signalToken(overrides?: CallOverrides): Promise<string>;
+
+    signalTokenSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
+    stake(
+      _stakee: string,
+      _amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    symbol(overrides?: CallOverrides): Promise<string>;
+
+    tokensStakedToUser(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
+    totalTokensStakedByUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    totalTokensStakedToUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    transfer(
+      to: string,
+      value: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      value: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    unstake(_stakee: string, overrides?: CallOverrides): Promise<void>;
+
+    userInteractions(arg0: string, overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
@@ -461,33 +629,20 @@ export class Market extends BaseContract {
       }
     >;
 
-    CurationAdded(
-      curator?: string | null,
-      layerCreator?: string | null
+    Redeemed(
+      staker?: string | null,
+      stakee?: string | null,
+      stakerReward?: null,
+      stakeeReward?: null
     ): TypedEventFilter<
-      [string, string],
-      { curator: string; layerCreator: string }
+      [string, string, BigNumber, BigNumber],
+      {
+        staker: string;
+        stakee: string;
+        stakerReward: BigNumber;
+        stakeeReward: BigNumber;
+      }
     >;
-
-    CurationRemoved(
-      curator?: string | null,
-      layerCreator?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { curator: string; layerCreator: string }
-    >;
-
-    LayerAdded(
-      creator?: string | null,
-      contentURI?: null
-    ): TypedEventFilter<
-      [string, string],
-      { creator: string; contentURI: string }
-    >;
-
-    LayerRemoved(
-      creator?: string | null
-    ): TypedEventFilter<[string], { creator: string }>;
 
     Sell(
       seller?: string | null,
@@ -506,6 +661,21 @@ export class Market extends BaseContract {
       }
     >;
 
+    Staked(
+      staker?: string | null,
+      stakee?: string | null,
+      amountStaked?: null,
+      signalTokensMinted?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber, BigNumber],
+      {
+        staker: string;
+        stakee: string;
+        amountStaked: BigNumber;
+        signalTokensMinted: BigNumber;
+      }
+    >;
+
     Transfer(
       from?: string | null,
       to?: string | null,
@@ -514,21 +684,35 @@ export class Market extends BaseContract {
       [string, string, BigNumber],
       { from: string; to: string; value: BigNumber }
     >;
+
+    Unstaked(
+      staker?: string | null,
+      stakee?: string | null,
+      amountRemovedFromStakingPool?: null,
+      signalTokensBurned?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber, BigNumber],
+      {
+        staker: string;
+        stakee: string;
+        amountRemovedFromStakingPool: BigNumber;
+        signalTokensBurned: BigNumber;
+      }
+    >;
   };
 
   estimateGas: {
-    addLayer(
-      _URI: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    addressToCuratedLayers(
+    allowance(
       arg0: string,
-      arg1: BigNumberish,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    addressToLayer(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+    approve(
+      spender: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
 
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -540,26 +724,19 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    created(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+    factory(overrides?: CallOverrides): Promise<BigNumber>;
 
-    curate(
-      _creator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
+    feeBase(overrides?: CallOverrides): Promise<BigNumber>;
+
+    feePct(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       _name: string,
+      _symbol: string,
       _bondingCurve: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      _signalToken: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    layers(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -567,12 +744,9 @@ export class Market extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<BigNumber>;
 
-    removeCuration(
-      _creator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    removeLayer(
+    redeem(
+      _staker: string,
+      _stakee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -584,24 +758,76 @@ export class Market extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    signalBalanceOf(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    signalToken(overrides?: CallOverrides): Promise<BigNumber>;
+
+    signalTokenSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
+    stake(
+      _stakee: string,
+      _amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    symbol(overrides?: CallOverrides): Promise<BigNumber>;
+
+    tokensStakedToUser(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
+    totalTokensStakedByUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    totalTokensStakedToUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    transfer(
+      to: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    unstake(
+      _stakee: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    userInteractions(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    addLayer(
-      _URI: string,
+    allowance(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    approve(
+      spender: string,
+      value: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    addressToCuratedLayers(
-      arg0: string,
-      arg1: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    addressToLayer(
-      arg0: string,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     balanceOf(
@@ -617,31 +843,18 @@ export class Market extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    created(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    factory(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    curate(
-      _creator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
+    feeBase(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    feePct(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     initialize(
       _name: string,
+      _symbol: string,
       _bondingCurve: string,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    isCuratingLayer(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    layers(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
+      _signalToken: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -650,12 +863,9 @@ export class Market extends BaseContract {
 
     ppm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    removeCuration(
-      _creator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    removeLayer(
+    redeem(
+      _staker: string,
+      _stakee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -667,6 +877,62 @@ export class Market extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    signalBalanceOf(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    signalToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    signalTokenSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    stake(
+      _stakee: string,
+      _amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    tokensStakedToUser(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    totalTokensStakedByUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    totalTokensStakedToUser(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    transfer(
+      to: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      value: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    unstake(
+      _stakee: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    userInteractions(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
   };
 }
