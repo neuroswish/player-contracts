@@ -31,6 +31,30 @@ contract Signal is ISignal, Initializable, AccessControl {
         _setupRole(OPERATOR, _operator);
     }
 
+    function getName() external view returns (string memory) {
+        return name;
+    }
+
+    function getSymbol() external view returns (string memory) {
+        return symbol;
+    }
+
+    function getTotalSupply() external view returns (uint256) {
+        return totalSupply;
+    }
+
+    function getBalanceOf(address _owner) external view returns (uint256) {
+        return balanceOf[_owner];
+    }
+
+    function getAllowance(address _owner, address _spender)
+        external
+        view
+        returns (uint256)
+    {
+        return allowance[_owner][_spender];
+    }
+
     function _mint(address _to, uint256 _value) external {
         require(
             hasRole(ADMIN, msg.sender) || hasRole(OPERATOR, msg.sender),

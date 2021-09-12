@@ -200,7 +200,7 @@ contract Market is ReentrancyGuard, Initializable {
             _amount > 0 && _amount >= balanceOf[msg.sender],
             "INVALID AMOUNT"
         );
-        // calculate signal provider tokens
+        // calculate number signal provider tokens to mint
         uint256 signal;
         if (signalTokenSupply == 0) {
             signal = _amount;
