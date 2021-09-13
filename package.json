@@ -13,7 +13,7 @@
   "dependencies": {
     "@chainlink/contracts": "^0.2.0",
     "@chainlink/external-adapter": "^0.2.6",
-    "@openzeppelin/contracts": "^4.2.0",
+    "@openzeppelin/contracts": "^4.3.1",
     "@openzeppelin/contracts-upgradeable": "^4.2.0",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.3.0",
