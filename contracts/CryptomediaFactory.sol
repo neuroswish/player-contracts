@@ -16,53 +16,26 @@ import "./interfaces/ICryptomedia.sol";
  */
 
 contract CryptomediaFactory is ICryptomediaFactory {
-    // ======== Immutable storage ========
-    address public immutable logic;
-    address public immutable bondingCurve;
+    // ======== Storage ========
+    address public logic;
+    address public bondingCurve;
 
     // Mapping from contentHash to bool
     mapping(bytes32 => bool) private _contentHashes;
 
-    //keccak256("Permit(address spender,uint256 tokenId,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH =
-        0x49ecf333e5b8c95c40fdafc95c1ad136e8914a8fb55e9dc8bb01eaa83a2df9ad;
+    bytes32 public constant DEPLOY_WITH_SIG_TYPEHASH =
+        keccak256(
+            "DeployWithSig(bytes32 contentHash,bytes32 metadataHash,uint256 feePct,uint256 nonce,uint256 deadline)"
+        );
+    // Mapping from address to deploy with sig nonce
+    mapping(address => uint256) public deployWithSigNonces;
 
-    //keccak256("MintWithSig(bytes32 contentHash,bytes32 metadataHash,uint256 creatorShare,uint256 nonce,uint256 deadline)");
-    bytes32 public constant MINT_WITH_SIG_TYPEHASH =
-        0x2952e482b8e2b192305f87374d7af45dc2eafafe4f50d26a0c02e90f2fdbe14b;
-
-    // Mapping from address to token id to permit nonce
-    mapping(address => mapping(uint256 => uint256)) public permitNonces;
-
-    // Mapping from address to mint with sig nonce
-    mapping(address => uint256) public mintWithSigNonces;
-
-    /*
-     *     bytes4(keccak256('name()')) == 0x06fdde03
-     *     bytes4(keccak256('symbol()')) == 0x95d89b41
-     *     bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
-     *     bytes4(keccak256('tokenMetadataURI(uint256)')) == 0x157c3df9
-     *
-     *     => 0x06fdde03 ^ 0x95d89b41 ^ 0xc87b56dd ^ 0x157c3df9 == 0x4e222e66
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x4e222e66;
     // ======== Events ========
     event CryptomediaDeployed(
         address indexed contractAddress,
         address indexed creator,
         uint256 feePct
     );
-
-    /**
-     * @notice Ensure that the provided URI is not empty
-     */
-    modifier onlyValidURI(string memory uri) {
-        require(
-            bytes(uri).length != 0,
-            "Media: specified uri must be non-empty"
-        );
-        _;
-    }
 
     // ======== Constructor ========
     constructor(address _bondingCurve) {
@@ -72,6 +45,7 @@ contract CryptomediaFactory is ICryptomediaFactory {
 
     /**
      * @dev Calculates EIP712 DOMAIN_SEPARATOR based on the current contract and chain ID.
+     * @notice to ensure multiple dapps don't use two identical structs for message signing
      */
     function _calculateDomainSeparator() internal view returns (bytes32) {
         uint256 chainID;
@@ -93,6 +67,8 @@ contract CryptomediaFactory is ICryptomediaFactory {
                 )
             );
     }
+
+    //TODO: Make sure content hash doesn't appear twice
 
     // ======== Deploy contract ========
     function createCryptomediaWithSig(
@@ -122,19 +98,19 @@ contract CryptomediaFactory is ICryptomediaFactory {
             sig.deadline == 0 || sig.deadline >= block.timestamp,
             "Media: mintWithSig expired"
         );
+        require(feePct <= 10**18, "Fee: percentage above 100");
+        _contentHashes[data.contentHash] = true;
         bytes32 domainSeparator = _calculateDomainSeparator();
-
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
                 keccak256(
                     abi.encode(
-                        MINT_WITH_SIG_TYPEHASH,
+                        DEPLOY_WITH_SIG_TYPEHASH,
                         data.contentHash,
                         data.metadataHash,
-                        //bidShares.creator.value,
-                        mintWithSigNonces[creator]++,
+                        deployWithSigNonces[creator]++,
                         sig.deadline
                     )
                 )

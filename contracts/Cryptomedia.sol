@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 import "./BondingCurve.sol";
 import "./ERC721Burnable.sol";
-//import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -42,9 +41,10 @@ contract Cryptomedia is
     MediaData public data;
     uint256 feePct;
     uint256 feeBase;
+
     // ======== Player params ========
-    // Mapping from token id to creator address
-    mapping(uint256 => address) public tokenCreators;
+    // Mapping from token id to holder address
+    mapping(uint256 => address) public tokenHolders;
 
     // Mapping from token id to sha256 hash of content
     mapping(uint256 => bytes32) public tokenContentHashes;
@@ -54,33 +54,6 @@ contract Cryptomedia is
 
     // Mapping from token id to metadataURI
     mapping(uint256 => string) private _tokenMetadataURIs;
-
-    // Mapping from contentHash to bool
-    mapping(bytes32 => bool) private _contentHashes;
-
-    //keccak256("Permit(address spender,uint256 tokenId,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH =
-        0x49ecf333e5b8c95c40fdafc95c1ad136e8914a8fb55e9dc8bb01eaa83a2df9ad;
-
-    //keccak256("MintWithSig(bytes32 contentHash,bytes32 metadataHash,uint256 creatorShare,uint256 nonce,uint256 deadline)");
-    bytes32 public constant MINT_WITH_SIG_TYPEHASH =
-        0x2952e482b8e2b192305f87374d7af45dc2eafafe4f50d26a0c02e90f2fdbe14b;
-
-    // Mapping from address to token id to permit nonce
-    mapping(address => mapping(uint256 => uint256)) public permitNonces;
-
-    // Mapping from address to mint with sig nonce
-    mapping(address => uint256) public mintWithSigNonces;
-
-    /*
-     *     bytes4(keccak256('name()')) == 0x06fdde03
-     *     bytes4(keccak256('symbol()')) == 0x95d89b41
-     *     bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
-     *     bytes4(keccak256('tokenMetadataURI(uint256)')) == 0x157c3df9
-     *
-     *     => 0x06fdde03 ^ 0x95d89b41 ^ 0xc87b56dd ^ 0x157c3df9 == 0x4e222e66
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x4e222e66;
 
     Counters.Counter private _tokenIdTracker;
 
@@ -109,10 +82,6 @@ contract Cryptomedia is
     /**
      * @notice Check to see if address holds tokens
      */
-    // modifier holder(address user) {
-    //     require(continuousBalanceOf[user] > 0, "MUST HOLD TOKENS");
-    //     _;
-    // }
 
     /**
      * @notice Require that the token has not been burned and has been minted
@@ -167,17 +136,6 @@ contract Cryptomedia is
         _;
     }
 
-    /**
-     * @notice Ensure that the provided URI is not empty
-     */
-    modifier onlyValidURI(string memory uri) {
-        require(
-            bytes(uri).length != 0,
-            "Media: specified uri must be non-empty"
-        );
-        _;
-    }
-
     constructor(address _bondingCurve) ERC721("Player", "PLAYER") {
         bondingCurve = _bondingCurve;
     }
@@ -206,6 +164,10 @@ contract Cryptomedia is
     ) private {
         require(msg.value == _price && msg.value > 0, "INVALID PRICE");
         require(_minTokensReturned > 0, "INVALID SLIPPAGE");
+        // calculate creator fee;
+        uint256 fee = (_price * feePct) / feeBase;
+        // update price used to buy tokens
+        _price -= fee;
         // calculate tokens returned
         uint256 tokensReturned;
         if (continuousTotalSupply == 0) {
@@ -223,6 +185,8 @@ contract Cryptomedia is
         // mint tokens for buyer
         _continuousMint(_tokenId, tokensReturned);
         poolBalance += _price;
+        // send fee to creator
+        sendValue(creator, fee);
         emit Buy(
             msg.sender,
             poolBalance,
@@ -310,8 +274,7 @@ contract Cryptomedia is
         _setTokenMetadataHash(tokenId, data.metadataHash);
         _setTokenMetadataURI(tokenId, data.metadataURI);
         _setTokenURI(tokenId, data.tokenURI);
-        _contentHashes[data.contentHash] = true;
-        tokenCreators[tokenId] = msg.sender;
+        tokenHolders[tokenId] = msg.sender;
         //_mintForBuyer(msg.sender, data, tokenId);
     }
 
@@ -319,21 +282,20 @@ contract Cryptomedia is
      * @notice Burn a token.
      * @dev Only callable if the media owner is also the creator.
      */
-    function burn(uint256 tokenId)
-        public
-        override
+    function burn(uint256 _tokenId, uint256 _minETHReturned)
+        external
         nonReentrant
-        onlyExistingToken(tokenId)
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyExistingToken(_tokenId)
+        onlyApprovedOrOwner(msg.sender, _tokenId)
     {
-        address owner = ownerOf(tokenId);
+        address owner = ownerOf(_tokenId);
 
         require(
-            tokenCreators[tokenId] == owner,
+            tokenHolders[_tokenId] == owner,
             "Media: owner is not creator of media"
         );
-
-        _burn(tokenId);
+        sell(_tokenId, _minETHReturned);
+        _burn(_tokenId);
     }
 
     function _setTokenContentHash(uint256 tokenId, bytes32 contentHash)
@@ -386,8 +348,6 @@ contract Cryptomedia is
         address to,
         uint256 tokenId
     ) internal override {
-        //IMarket(marketContract).removeAsk(tokenId);
-
         super._transfer(from, to, tokenId);
     }
 
