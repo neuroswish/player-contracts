@@ -12,7 +12,7 @@ import "./interfaces/ICryptomedia.sol";
  *
  * Factory for deploying new cryptomedia
  *
- * "Good morning, look at the valedictorian. Scared of the future while I hop in the DeLorean"
+ * "My childlike creativity, purity, and honesty is honestly being crowded by these grown thoughts"
  */
 
 contract CryptomediaFactory is ICryptomediaFactory {
@@ -27,6 +27,7 @@ contract CryptomediaFactory is ICryptomediaFactory {
         keccak256(
             "DeployWithSig(bytes32 contentHash,bytes32 metadataHash,uint256 feePct,uint256 nonce,uint256 deadline)"
         );
+
     // Mapping from address to deploy with sig nonce
     mapping(address => uint256) public deployWithSigNonces;
 
@@ -68,8 +69,6 @@ contract CryptomediaFactory is ICryptomediaFactory {
             );
     }
 
-    //TODO: Make sure content hash doesn't appear twice
-
     // ======== Deploy contract ========
     function createCryptomediaWithSig(
         address creator,
@@ -98,7 +97,9 @@ contract CryptomediaFactory is ICryptomediaFactory {
             sig.deadline == 0 || sig.deadline >= block.timestamp,
             "Media: mintWithSig expired"
         );
+        // require creator fee to be percentage < 100
         require(feePct <= 10**18, "Fee: percentage above 100");
+        // store unique content hash
         _contentHashes[data.contentHash] = true;
         bytes32 domainSeparator = _calculateDomainSeparator();
         bytes32 digest = keccak256(
@@ -110,6 +111,7 @@ contract CryptomediaFactory is ICryptomediaFactory {
                         DEPLOY_WITH_SIG_TYPEHASH,
                         data.contentHash,
                         data.metadataHash,
+                        feePct,
                         deployWithSigNonces[creator]++,
                         sig.deadline
                     )

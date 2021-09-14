@@ -34,13 +34,13 @@ contract Cryptomedia is
     uint32 public ppm; // token units
     uint256 public poolBalance; // ETH balance in contract pool
     uint256 public continuousTotalSupply; // total supply of tokens in circulation
-    mapping(uint256 => uint256) public tokenBalance; // mapping of an address to that user's total token balance for this contract
+    mapping(uint256 => uint256) public tokenBalance; // mapping of an address to that user's continuous token balance for this contract
 
     // ======== Creator params ========
-    address public creator;
-    MediaData public data;
-    uint256 feePct;
-    uint256 feeBase;
+    address public creator; // contract creator
+    MediaData public data; // NFT data
+    uint256 feePct; // creator fee percentage
+    uint256 feeBase; // fee base
 
     // ======== Player params ========
     // Mapping from token id to holder address
@@ -55,6 +55,7 @@ contract Cryptomedia is
     // Mapping from token id to metadataURI
     mapping(uint256 => string) private _tokenMetadataURIs;
 
+    // token ID tracker
     Counters.Counter private _tokenIdTracker;
 
     // ======== Events ========
@@ -74,14 +75,8 @@ contract Cryptomedia is
     );
     event ContinuousMint(address indexed from, uint256 tokenId, uint256 value);
     event ContinuousBurn(uint256 tokenId, address indexed to, uint256 value);
-    event LayerCreated(address indexed creator, string text);
-    event LayerUpdated(address indexed creator, string newText);
-    event LayerRemoved(address indexed creator);
 
     // ======== Modifiers ========
-    /**
-     * @notice Check to see if address holds tokens
-     */
 
     /**
      * @notice Require that the token has not been burned and has been minted
@@ -136,10 +131,16 @@ contract Cryptomedia is
         _;
     }
 
+    /**
+     * @dev constructor sets bonding curve address
+     */
     constructor(address _bondingCurve) ERC721("Player", "PLAYER") {
         bondingCurve = _bondingCurve;
     }
 
+    /**
+     * @dev initialize function called by factory when deploying new proxy; sets creator address, media data, and creator fee percentage
+     */
     function initialize(
         address _creator,
         MediaData memory _data,
@@ -153,8 +154,52 @@ contract Cryptomedia is
 
     // ======== Functions ========
 
+    /* **************
+     * External Functions
+     * **************
+     */
+
     /**
-     * @notice Buy market tokens with ETH
+     * @notice Mint new NFT for buyer
+     * @dev requires buyer to specify minimum number of continuous tokens they want to receive representing share of contract
+     */
+    function mint(uint256 _minTokens) external payable nonReentrant {
+        // generate new NFT token ID
+        uint256 tokenId = _tokenIdTracker.current();
+        // buy continuous tokens
+        buy(tokenId, msg.value, _minTokens);
+        // mint NFT for caller
+        _safeMint(msg.sender, tokenId);
+        _tokenIdTracker.increment();
+        _setTokenContentHash(tokenId, data.contentHash);
+        _setTokenMetadataHash(tokenId, data.metadataHash);
+        _setTokenMetadataURI(tokenId, data.metadataURI);
+        _setTokenURI(tokenId, data.tokenURI);
+        tokenHolders[tokenId] = msg.sender;
+    }
+
+    /**
+     * @notice Burn NFT and receive instant liquidity in the form of ETH by exchanging continuous tokens through bonding curve.
+     * @dev Only callable if the media owner is also the creator.
+     */
+    function burn(uint256 _tokenId, uint256 _minETHReturned)
+        external
+        nonReentrant
+        onlyExistingToken(_tokenId)
+        onlyApprovedOrOwner(msg.sender, _tokenId)
+    {
+        address owner = ownerOf(_tokenId);
+
+        require(
+            tokenHolders[_tokenId] == owner,
+            "Media: owner is not creator of media"
+        );
+        sell(_tokenId, _minETHReturned);
+        _burn(_tokenId);
+    }
+
+    /**
+     * @notice Buy continuous tokens with ETH
      * @dev Emits a Buy event upon success
      */
     function buy(
@@ -196,8 +241,13 @@ contract Cryptomedia is
         );
     }
 
+    /* **************
+     * Private Functions
+     * **************
+     */
+
     /**
-     * @notice Sell market tokens for ETH
+     * @notice Sell continuous tokens for ETH
      * @dev Emits a Sell event upon success; callable by token holders
      */
     function sell(uint256 _tokenId, uint256 _minETHReturned) private {
@@ -211,10 +261,11 @@ contract Cryptomedia is
             tokenBalance[_tokenId]
         );
         require(ethReturned >= _minETHReturned, "SLIPPAGE");
-        // burn tokens
+        // burn continuous tokens
         uint256 sellAmt = tokenBalance[_tokenId];
         _continuousBurn(_tokenId, sellAmt);
         poolBalance -= ethReturned;
+        // send corresponding ETH from selling continuous tokens to caller
         sendValue(ownerOf(_tokenId), ethReturned);
         emit Sell(
             ownerOf(_tokenId),
@@ -262,41 +313,10 @@ contract Cryptomedia is
         return _tokenMetadataURIs[tokenId];
     }
 
-    /**
-     * @notice see IMedia
+    /* **************
+     * Internal Helper Functions
+     * **************
      */
-    function mint(uint256 _minTokens) external payable nonReentrant {
-        uint256 tokenId = _tokenIdTracker.current();
-        buy(tokenId, msg.value, _minTokens);
-        _safeMint(msg.sender, tokenId);
-        _tokenIdTracker.increment();
-        _setTokenContentHash(tokenId, data.contentHash);
-        _setTokenMetadataHash(tokenId, data.metadataHash);
-        _setTokenMetadataURI(tokenId, data.metadataURI);
-        _setTokenURI(tokenId, data.tokenURI);
-        tokenHolders[tokenId] = msg.sender;
-        //_mintForBuyer(msg.sender, data, tokenId);
-    }
-
-    /**
-     * @notice Burn a token.
-     * @dev Only callable if the media owner is also the creator.
-     */
-    function burn(uint256 _tokenId, uint256 _minETHReturned)
-        external
-        nonReentrant
-        onlyExistingToken(_tokenId)
-        onlyApprovedOrOwner(msg.sender, _tokenId)
-    {
-        address owner = ownerOf(_tokenId);
-
-        require(
-            tokenHolders[_tokenId] == owner,
-            "Media: owner is not creator of media"
-        );
-        sell(_tokenId, _minETHReturned);
-        _burn(_tokenId);
-    }
 
     function _setTokenContentHash(uint256 tokenId, bytes32 contentHash)
         internal
@@ -351,7 +371,10 @@ contract Cryptomedia is
         super._transfer(from, to, tokenId);
     }
 
-    // ============ Utility ============
+    /* **************
+     * Utility Functions
+     * **************
+     */
 
     /**
      * @notice Send ETH in a safe manner

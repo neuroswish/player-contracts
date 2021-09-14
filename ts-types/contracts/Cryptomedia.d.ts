@@ -22,132 +22,312 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface CryptomediaInterface extends ethers.utils.Interface {
   functions: {
+    "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "bondingCurve()": FunctionFragment;
-    "buy(uint256,uint256)": FunctionFragment;
-    "createLayer(string)": FunctionFragment;
-    "created(address)": FunctionFragment;
-    "curateLayer(address)": FunctionFragment;
-    "curated(address)": FunctionFragment;
-    "getLayer(address)": FunctionFragment;
-    "initialize(string,address)": FunctionFragment;
+    "burn(uint256)": FunctionFragment;
+    "continuousTotalSupply()": FunctionFragment;
+    "creator()": FunctionFragment;
+    "data()": FunctionFragment;
+    "getApproved(uint256)": FunctionFragment;
+    "initialize(address,tuple,uint256)": FunctionFragment;
+    "isApprovedForAll(address,address)": FunctionFragment;
+    "mint(uint256)": FunctionFragment;
     "name()": FunctionFragment;
+    "ownerOf(uint256)": FunctionFragment;
     "poolBalance()": FunctionFragment;
     "ppm()": FunctionFragment;
-    "removeCreatedLayer()": FunctionFragment;
-    "removeCuratedLayer()": FunctionFragment;
     "reserveRatio()": FunctionFragment;
-    "sell(uint256,uint256)": FunctionFragment;
-    "totalSupply()": FunctionFragment;
+    "safeTransferFrom(address,address,uint256)": FunctionFragment;
+    "setApprovalForAll(address,bool)": FunctionFragment;
+    "supportsInterface(bytes4)": FunctionFragment;
+    "symbol()": FunctionFragment;
+    "tokenBalance(uint256)": FunctionFragment;
+    "tokenContentHashes(uint256)": FunctionFragment;
+    "tokenHolders(uint256)": FunctionFragment;
+    "tokenMetadataHashes(uint256)": FunctionFragment;
+    "tokenMetadataURI(uint256)": FunctionFragment;
+    "tokenURI(uint256)": FunctionFragment;
+    "transferFrom(address,address,uint256)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "approve",
+    values: [string, BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "bondingCurve",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "burn", values: [BigNumberish]): string;
   encodeFunctionData(
-    functionFragment: "buy",
-    values: [BigNumberish, BigNumberish]
+    functionFragment: "continuousTotalSupply",
+    values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "createLayer", values: [string]): string;
-  encodeFunctionData(functionFragment: "created", values: [string]): string;
-  encodeFunctionData(functionFragment: "curateLayer", values: [string]): string;
-  encodeFunctionData(functionFragment: "curated", values: [string]): string;
-  encodeFunctionData(functionFragment: "getLayer", values: [string]): string;
+  encodeFunctionData(functionFragment: "creator", values?: undefined): string;
+  encodeFunctionData(functionFragment: "data", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "getApproved",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "initialize",
+    values: [
+      string,
+      {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      BigNumberish
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isApprovedForAll",
     values: [string, string]
   ): string;
+  encodeFunctionData(functionFragment: "mint", values: [BigNumberish]): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "ownerOf",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "poolBalance",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "ppm", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "removeCreatedLayer",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "removeCuratedLayer",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "reserveRatio",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "sell",
-    values: [BigNumberish, BigNumberish]
+    functionFragment: "safeTransferFrom",
+    values: [string, string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "totalSupply",
-    values?: undefined
+    functionFragment: "setApprovalForAll",
+    values: [string, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "tokenBalance",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tokenContentHashes",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tokenHolders",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tokenMetadataHashes",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tokenMetadataURI",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tokenURI",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transferFrom",
+    values: [string, string, BigNumberish]
   ): string;
 
+  decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "bondingCurve",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "burn", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "createLayer",
+    functionFragment: "continuousTotalSupply",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "created", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "creator", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "data", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "curateLayer",
+    functionFragment: "getApproved",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "curated", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "getLayer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "isApprovedForAll",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "poolBalance",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "ppm", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "removeCreatedLayer",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "removeCuratedLayer",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "reserveRatio",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "sell", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "totalSupply",
+    functionFragment: "safeTransferFrom",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setApprovalForAll",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "supportsInterface",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenBalance",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenContentHashes",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenHolders",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenMetadataHashes",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenMetadataURI",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "transferFrom",
     data: BytesLike
   ): Result;
 
   events: {
+    "Approval(address,address,uint256)": EventFragment;
+    "ApprovalForAll(address,address,bool)": EventFragment;
     "Buy(address,uint256,uint256,uint256,uint256)": EventFragment;
-    "CurationAdded(address,address)": EventFragment;
-    "CurationRemoved(address,address)": EventFragment;
+    "ContinuousBurn(uint256,address,uint256)": EventFragment;
+    "ContinuousMint(address,uint256,uint256)": EventFragment;
     "LayerCreated(address,string)": EventFragment;
     "LayerRemoved(address)": EventFragment;
+    "LayerUpdated(address,string)": EventFragment;
     "Sell(address,uint256,uint256,uint256,uint256)": EventFragment;
+    "TokenMetadataURIUpdated(uint256,address,string)": EventFragment;
+    "TokenURIUpdated(uint256,address,string)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
-    "noLongerHolder(address)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ApprovalForAll"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Buy"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "CurationAdded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "CurationRemoved"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ContinuousBurn"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ContinuousMint"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LayerCreated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LayerRemoved"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "LayerUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Sell"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "TokenMetadataURIUpdated"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "TokenURIUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "noLongerHolder"): EventFragment;
 }
+
+export type ApprovalEvent = TypedEvent<
+  [string, string, BigNumber] & {
+    owner: string;
+    approved: string;
+    tokenId: BigNumber;
+  }
+>;
+
+export type ApprovalForAllEvent = TypedEvent<
+  [string, string, boolean] & {
+    owner: string;
+    operator: string;
+    approved: boolean;
+  }
+>;
+
+export type BuyEvent = TypedEvent<
+  [string, BigNumber, BigNumber, BigNumber, BigNumber] & {
+    buyer: string;
+    poolBalance: BigNumber;
+    continuousTotalSupply: BigNumber;
+    tokens: BigNumber;
+    price: BigNumber;
+  }
+>;
+
+export type ContinuousBurnEvent = TypedEvent<
+  [BigNumber, string, BigNumber] & {
+    tokenId: BigNumber;
+    to: string;
+    value: BigNumber;
+  }
+>;
+
+export type ContinuousMintEvent = TypedEvent<
+  [string, BigNumber, BigNumber] & {
+    from: string;
+    tokenId: BigNumber;
+    value: BigNumber;
+  }
+>;
+
+export type LayerCreatedEvent = TypedEvent<
+  [string, string] & { creator: string; text: string }
+>;
+
+export type LayerRemovedEvent = TypedEvent<[string] & { creator: string }>;
+
+export type LayerUpdatedEvent = TypedEvent<
+  [string, string] & { creator: string; newText: string }
+>;
+
+export type SellEvent = TypedEvent<
+  [string, BigNumber, BigNumber, BigNumber, BigNumber] & {
+    seller: string;
+    poolBalance: BigNumber;
+    continuousTotalSupply: BigNumber;
+    tokens: BigNumber;
+    eth: BigNumber;
+  }
+>;
+
+export type TokenMetadataURIUpdatedEvent = TypedEvent<
+  [BigNumber, string, string] & {
+    _tokenId: BigNumber;
+    owner: string;
+    _uri: string;
+  }
+>;
+
+export type TokenURIUpdatedEvent = TypedEvent<
+  [BigNumber, string, string] & {
+    _tokenId: BigNumber;
+    owner: string;
+    _uri: string;
+  }
+>;
+
+export type TransferEvent = TypedEvent<
+  [string, string, BigNumber] & { from: string; to: string; tokenId: BigNumber }
+>;
 
 export class Cryptomedia extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -193,178 +373,458 @@ export class Cryptomedia extends BaseContract {
   interface: CryptomediaInterface;
 
   functions: {
-    balanceOf(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
+    approve(
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    balanceOf(owner: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     bondingCurve(overrides?: CallOverrides): Promise<[string]>;
 
-    buy(
-      _price: BigNumberish,
-      _minTokensReturned: BigNumberish,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    createLayer(
-      _URI: string,
+    "burn(uint256)"(
+      tokenId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    created(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
-
-    curateLayer(
-      _creator: string,
+    "burn(uint256,uint256)"(
+      _tokenId: BigNumberish,
+      _minETHReturned: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    curated(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
+    continuousTotalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    getLayer(
-      _user: string,
+    creator(overrides?: CallOverrides): Promise<[string]>;
+
+    data(
       overrides?: CallOverrides
-    ): Promise<[string, string]>;
+    ): Promise<
+      [string, string, string, string] & {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: string;
+        metadataHash: string;
+      }
+    >;
+
+    getApproved(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
 
     initialize(
-      _name: string,
-      _bondingCurve: string,
+      _creator: string,
+      _data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      _feePct: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    isApprovedForAll(
+      owner: string,
+      operator: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    mint(
+      _minTokens: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     name(overrides?: CallOverrides): Promise<[string]>;
 
+    ownerOf(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
     poolBalance(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     ppm(overrides?: CallOverrides): Promise<[number]>;
 
-    removeCreatedLayer(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    removeCuratedLayer(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     reserveRatio(overrides?: CallOverrides): Promise<[number]>;
 
-    sell(
-      _tokens: BigNumberish,
-      _minETHReturned: BigNumberish,
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setApprovalForAll(
+      operator: string,
+      approved: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    symbol(overrides?: CallOverrides): Promise<[string]>;
+
+    tokenBalance(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    tokenContentHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    tokenHolders(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    tokenMetadataHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    tokenMetadataURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    tokenURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
-  balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+  approve(
+    to: string,
+    tokenId: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   bondingCurve(overrides?: CallOverrides): Promise<string>;
 
-  buy(
-    _price: BigNumberish,
-    _minTokensReturned: BigNumberish,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  createLayer(
-    _URI: string,
+  "burn(uint256)"(
+    tokenId: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
-
-  curateLayer(
-    _creator: string,
+  "burn(uint256,uint256)"(
+    _tokenId: BigNumberish,
+    _minETHReturned: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  curated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+  continuousTotalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
-  getLayer(_user: string, overrides?: CallOverrides): Promise<[string, string]>;
+  creator(overrides?: CallOverrides): Promise<string>;
+
+  data(
+    overrides?: CallOverrides
+  ): Promise<
+    [string, string, string, string] & {
+      tokenURI: string;
+      metadataURI: string;
+      contentHash: string;
+      metadataHash: string;
+    }
+  >;
+
+  getApproved(
+    tokenId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string>;
 
   initialize(
-    _name: string,
-    _bondingCurve: string,
+    _creator: string,
+    _data: {
+      tokenURI: string;
+      metadataURI: string;
+      contentHash: BytesLike;
+      metadataHash: BytesLike;
+    },
+    _feePct: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  isApprovedForAll(
+    owner: string,
+    operator: string,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  mint(
+    _minTokens: BigNumberish,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   name(overrides?: CallOverrides): Promise<string>;
 
+  ownerOf(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
+
   poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
   ppm(overrides?: CallOverrides): Promise<number>;
 
-  removeCreatedLayer(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  removeCuratedLayer(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   reserveRatio(overrides?: CallOverrides): Promise<number>;
 
-  sell(
-    _tokens: BigNumberish,
-    _minETHReturned: BigNumberish,
+  "safeTransferFrom(address,address,uint256)"(
+    from: string,
+    to: string,
+    tokenId: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
+  "safeTransferFrom(address,address,uint256,bytes)"(
+    from: string,
+    to: string,
+    tokenId: BigNumberish,
+    _data: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setApprovalForAll(
+    operator: string,
+    approved: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  supportsInterface(
+    interfaceId: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  symbol(overrides?: CallOverrides): Promise<string>;
+
+  tokenBalance(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  tokenContentHashes(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  tokenHolders(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
+
+  tokenMetadataHashes(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  tokenMetadataURI(
+    tokenId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
+
+  transferFrom(
+    from: string,
+    to: string,
+    tokenId: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   callStatic: {
-    balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+    approve(
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<string>;
 
-    buy(
-      _price: BigNumberish,
-      _minTokensReturned: BigNumberish,
+    "burn(uint256)"(
+      tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    createLayer(_URI: string, overrides?: CallOverrides): Promise<void>;
-
-    created(arg0: string, overrides?: CallOverrides): Promise<boolean>;
-
-    curateLayer(_creator: string, overrides?: CallOverrides): Promise<void>;
-
-    curated(arg0: string, overrides?: CallOverrides): Promise<boolean>;
-
-    getLayer(
-      _user: string,
+    "burn(uint256,uint256)"(
+      _tokenId: BigNumberish,
+      _minETHReturned: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[string, string]>;
+    ): Promise<void>;
+
+    continuousTotalSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
+    creator(overrides?: CallOverrides): Promise<string>;
+
+    data(
+      overrides?: CallOverrides
+    ): Promise<
+      [string, string, string, string] & {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: string;
+        metadataHash: string;
+      }
+    >;
+
+    getApproved(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
 
     initialize(
-      _name: string,
-      _bondingCurve: string,
+      _creator: string,
+      _data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      _feePct: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
+    isApprovedForAll(
+      owner: string,
+      operator: string,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    mint(_minTokens: BigNumberish, overrides?: CallOverrides): Promise<void>;
+
     name(overrides?: CallOverrides): Promise<string>;
+
+    ownerOf(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
     poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
     ppm(overrides?: CallOverrides): Promise<number>;
 
-    removeCreatedLayer(overrides?: CallOverrides): Promise<void>;
-
-    removeCuratedLayer(overrides?: CallOverrides): Promise<void>;
-
     reserveRatio(overrides?: CallOverrides): Promise<number>;
 
-    sell(
-      _tokens: BigNumberish,
-      _minETHReturned: BigNumberish,
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setApprovalForAll(
+      operator: string,
+      approved: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    symbol(overrides?: CallOverrides): Promise<string>;
+
+    tokenBalance(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenContentHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    tokenHolders(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    tokenMetadataHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    tokenMetadataURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
   };
 
   filters: {
-    Buy(
+    "Approval(address,address,uint256)"(
+      owner?: string | null,
+      approved?: string | null,
+      tokenId?: BigNumberish | null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { owner: string; approved: string; tokenId: BigNumber }
+    >;
+
+    Approval(
+      owner?: string | null,
+      approved?: string | null,
+      tokenId?: BigNumberish | null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { owner: string; approved: string; tokenId: BigNumber }
+    >;
+
+    "ApprovalForAll(address,address,bool)"(
+      owner?: string | null,
+      operator?: string | null,
+      approved?: null
+    ): TypedEventFilter<
+      [string, string, boolean],
+      { owner: string; operator: string; approved: boolean }
+    >;
+
+    ApprovalForAll(
+      owner?: string | null,
+      operator?: string | null,
+      approved?: null
+    ): TypedEventFilter<
+      [string, string, boolean],
+      { owner: string; operator: string; approved: boolean }
+    >;
+
+    "Buy(address,uint256,uint256,uint256,uint256)"(
       buyer?: string | null,
       poolBalance?: null,
-      totalSupply?: null,
+      continuousTotalSupply?: null,
       tokens?: null,
       price?: null
     ): TypedEventFilter<
@@ -372,44 +832,97 @@ export class Cryptomedia extends BaseContract {
       {
         buyer: string;
         poolBalance: BigNumber;
-        totalSupply: BigNumber;
+        continuousTotalSupply: BigNumber;
         tokens: BigNumber;
         price: BigNumber;
       }
     >;
 
-    CurationAdded(
-      curator?: string | null,
-      layerCreator?: string | null
+    Buy(
+      buyer?: string | null,
+      poolBalance?: null,
+      continuousTotalSupply?: null,
+      tokens?: null,
+      price?: null
     ): TypedEventFilter<
-      [string, string],
-      { curator: string; layerCreator: string }
+      [string, BigNumber, BigNumber, BigNumber, BigNumber],
+      {
+        buyer: string;
+        poolBalance: BigNumber;
+        continuousTotalSupply: BigNumber;
+        tokens: BigNumber;
+        price: BigNumber;
+      }
     >;
 
-    CurationRemoved(
-      curator?: string | null,
-      layerCreator?: string | null
+    "ContinuousBurn(uint256,address,uint256)"(
+      tokenId?: null,
+      to?: string | null,
+      value?: null
     ): TypedEventFilter<
-      [string, string],
-      { curator: string; layerCreator: string }
+      [BigNumber, string, BigNumber],
+      { tokenId: BigNumber; to: string; value: BigNumber }
     >;
+
+    ContinuousBurn(
+      tokenId?: null,
+      to?: string | null,
+      value?: null
+    ): TypedEventFilter<
+      [BigNumber, string, BigNumber],
+      { tokenId: BigNumber; to: string; value: BigNumber }
+    >;
+
+    "ContinuousMint(address,uint256,uint256)"(
+      from?: string | null,
+      tokenId?: null,
+      value?: null
+    ): TypedEventFilter<
+      [string, BigNumber, BigNumber],
+      { from: string; tokenId: BigNumber; value: BigNumber }
+    >;
+
+    ContinuousMint(
+      from?: string | null,
+      tokenId?: null,
+      value?: null
+    ): TypedEventFilter<
+      [string, BigNumber, BigNumber],
+      { from: string; tokenId: BigNumber; value: BigNumber }
+    >;
+
+    "LayerCreated(address,string)"(
+      creator?: string | null,
+      text?: null
+    ): TypedEventFilter<[string, string], { creator: string; text: string }>;
 
     LayerCreated(
       creator?: string | null,
-      contentURI?: null
-    ): TypedEventFilter<
-      [string, string],
-      { creator: string; contentURI: string }
-    >;
+      text?: null
+    ): TypedEventFilter<[string, string], { creator: string; text: string }>;
+
+    "LayerRemoved(address)"(
+      creator?: string | null
+    ): TypedEventFilter<[string], { creator: string }>;
 
     LayerRemoved(
       creator?: string | null
     ): TypedEventFilter<[string], { creator: string }>;
 
-    Sell(
+    "LayerUpdated(address,string)"(
+      creator?: string | null,
+      newText?: null
+    ): TypedEventFilter<[string, string], { creator: string; newText: string }>;
+
+    LayerUpdated(
+      creator?: string | null,
+      newText?: null
+    ): TypedEventFilter<[string, string], { creator: string; newText: string }>;
+
+    "Sell(address,uint256,uint256,uint256,uint256)"(
       seller?: string | null,
       poolBalance?: null,
-      totalSupply?: null,
+      continuousTotalSupply?: null,
       tokens?: null,
       eth?: null
     ): TypedEventFilter<
@@ -417,151 +930,356 @@ export class Cryptomedia extends BaseContract {
       {
         seller: string;
         poolBalance: BigNumber;
-        totalSupply: BigNumber;
+        continuousTotalSupply: BigNumber;
         tokens: BigNumber;
         eth: BigNumber;
       }
     >;
 
+    Sell(
+      seller?: string | null,
+      poolBalance?: null,
+      continuousTotalSupply?: null,
+      tokens?: null,
+      eth?: null
+    ): TypedEventFilter<
+      [string, BigNumber, BigNumber, BigNumber, BigNumber],
+      {
+        seller: string;
+        poolBalance: BigNumber;
+        continuousTotalSupply: BigNumber;
+        tokens: BigNumber;
+        eth: BigNumber;
+      }
+    >;
+
+    "TokenMetadataURIUpdated(uint256,address,string)"(
+      _tokenId?: BigNumberish | null,
+      owner?: null,
+      _uri?: null
+    ): TypedEventFilter<
+      [BigNumber, string, string],
+      { _tokenId: BigNumber; owner: string; _uri: string }
+    >;
+
+    TokenMetadataURIUpdated(
+      _tokenId?: BigNumberish | null,
+      owner?: null,
+      _uri?: null
+    ): TypedEventFilter<
+      [BigNumber, string, string],
+      { _tokenId: BigNumber; owner: string; _uri: string }
+    >;
+
+    "TokenURIUpdated(uint256,address,string)"(
+      _tokenId?: BigNumberish | null,
+      owner?: null,
+      _uri?: null
+    ): TypedEventFilter<
+      [BigNumber, string, string],
+      { _tokenId: BigNumber; owner: string; _uri: string }
+    >;
+
+    TokenURIUpdated(
+      _tokenId?: BigNumberish | null,
+      owner?: null,
+      _uri?: null
+    ): TypedEventFilter<
+      [BigNumber, string, string],
+      { _tokenId: BigNumber; owner: string; _uri: string }
+    >;
+
+    "Transfer(address,address,uint256)"(
+      from?: string | null,
+      to?: string | null,
+      tokenId?: BigNumberish | null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { from: string; to: string; tokenId: BigNumber }
+    >;
+
     Transfer(
       from?: string | null,
       to?: string | null,
-      value?: null
+      tokenId?: BigNumberish | null
     ): TypedEventFilter<
       [string, string, BigNumber],
-      { from: string; to: string; value: BigNumber }
+      { from: string; to: string; tokenId: BigNumber }
     >;
-
-    noLongerHolder(
-      user?: string | null
-    ): TypedEventFilter<[string], { user: string }>;
   };
 
   estimateGas: {
-    balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+    approve(
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
 
-    buy(
-      _price: BigNumberish,
-      _minTokensReturned: BigNumberish,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    createLayer(
-      _URI: string,
+    "burn(uint256)"(
+      tokenId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    created(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    curateLayer(
-      _creator: string,
+    "burn(uint256,uint256)"(
+      _tokenId: BigNumberish,
+      _minETHReturned: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    curated(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+    continuousTotalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getLayer(_user: string, overrides?: CallOverrides): Promise<BigNumber>;
+    creator(overrides?: CallOverrides): Promise<BigNumber>;
+
+    data(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getApproved(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     initialize(
-      _name: string,
-      _bondingCurve: string,
+      _creator: string,
+      _data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      _feePct: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    isApprovedForAll(
+      owner: string,
+      operator: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    mint(
+      _minTokens: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
 
+    ownerOf(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     poolBalance(overrides?: CallOverrides): Promise<BigNumber>;
 
     ppm(overrides?: CallOverrides): Promise<BigNumber>;
 
-    removeCreatedLayer(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    removeCuratedLayer(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     reserveRatio(overrides?: CallOverrides): Promise<BigNumber>;
 
-    sell(
-      _tokens: BigNumberish,
-      _minETHReturned: BigNumberish,
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setApprovalForAll(
+      operator: string,
+      approved: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    symbol(overrides?: CallOverrides): Promise<BigNumber>;
+
+    tokenBalance(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenContentHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenHolders(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenMetadataHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenMetadataURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
+    approve(
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     balanceOf(
-      arg0: string,
+      owner: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     bondingCurve(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    buy(
-      _price: BigNumberish,
-      _minTokensReturned: BigNumberish,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    createLayer(
-      _URI: string,
+    "burn(uint256)"(
+      tokenId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    created(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    curateLayer(
-      _creator: string,
+    "burn(uint256,uint256)"(
+      _tokenId: BigNumberish,
+      _minETHReturned: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    curated(
-      arg0: string,
+    continuousTotalSupply(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    getLayer(
-      _user: string,
+    creator(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    data(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    getApproved(
+      tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     initialize(
-      _name: string,
-      _bondingCurve: string,
+      _creator: string,
+      _data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      _feePct: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    isApprovedForAll(
+      owner: string,
+      operator: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    mint(
+      _minTokens: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    ownerOf(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     poolBalance(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     ppm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    removeCreatedLayer(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    removeCuratedLayer(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     reserveRatio(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    sell(
-      _tokens: BigNumberish,
-      _minETHReturned: BigNumberish,
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setApprovalForAll(
+      operator: string,
+      approved: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    tokenBalance(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    tokenContentHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    tokenHolders(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    tokenMetadataHashes(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    tokenMetadataURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    tokenURI(
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    transferFrom(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
   };
 }

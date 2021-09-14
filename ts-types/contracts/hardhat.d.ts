@@ -13,6 +13,30 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
+      name: "IERC721Enumerable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC721Enumerable__factory>;
+    getContractFactory(
+      name: "IERC721Metadata",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC721Metadata__factory>;
+    getContractFactory(
+      name: "IERC721",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC721__factory>;
+    getContractFactory(
+      name: "IERC721Receiver",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC721Receiver__factory>;
+    getContractFactory(
+      name: "ERC165",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ERC165__factory>;
+    getContractFactory(
+      name: "IERC165",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC165__factory>;
+    getContractFactory(
       name: "BondingCurve",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BondingCurve__factory>;
@@ -25,13 +49,21 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.CryptomediaFactory__factory>;
     getContractFactory(
-      name: "Greeter",
+      name: "ERC721",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Greeter__factory>;
+    ): Promise<Contracts.ERC721__factory>;
+    getContractFactory(
+      name: "ERC721Burnable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ERC721Burnable__factory>;
     getContractFactory(
       name: "IBondingCurve",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBondingCurve__factory>;
+    getContractFactory(
+      name: "ICryptomedia",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ICryptomedia__factory>;
     getContractFactory(
       name: "Power",
       signerOrOptions?: ethers.Signer | FactoryOptions

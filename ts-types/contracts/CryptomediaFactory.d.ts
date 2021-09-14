@@ -21,37 +21,73 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface CryptomediaFactoryInterface extends ethers.utils.Interface {
   functions: {
+    "DEPLOY_WITH_SIG_TYPEHASH()": FunctionFragment;
     "bondingCurve()": FunctionFragment;
-    "createCryptomedia(string)": FunctionFragment;
+    "createCryptomediaWithSig(address,tuple,uint256,tuple)": FunctionFragment;
+    "deployWithSigNonces(address)": FunctionFragment;
     "logic()": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "DEPLOY_WITH_SIG_TYPEHASH",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "bondingCurve",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "createCryptomedia",
+    functionFragment: "createCryptomediaWithSig",
+    values: [
+      string,
+      {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      BigNumberish,
+      { deadline: BigNumberish; v: BigNumberish; r: BytesLike; s: BytesLike }
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "deployWithSigNonces",
     values: [string]
   ): string;
   encodeFunctionData(functionFragment: "logic", values?: undefined): string;
 
   decodeFunctionResult(
+    functionFragment: "DEPLOY_WITH_SIG_TYPEHASH",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "bondingCurve",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "createCryptomedia",
+    functionFragment: "createCryptomediaWithSig",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "deployWithSigNonces",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "logic", data: BytesLike): Result;
 
   events: {
-    "CryptomediaDeployed(address,address,string)": EventFragment;
+    "CryptomediaDeployed(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "CryptomediaDeployed"): EventFragment;
 }
+
+export type CryptomediaDeployedEvent = TypedEvent<
+  [string, string, BigNumber] & {
+    contractAddress: string;
+    creator: string;
+    feePct: BigNumber;
+  }
+>;
 
 export class CryptomediaFactory extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -97,64 +133,175 @@ export class CryptomediaFactory extends BaseContract {
   interface: CryptomediaFactoryInterface;
 
   functions: {
+    DEPLOY_WITH_SIG_TYPEHASH(overrides?: CallOverrides): Promise<[string]>;
+
     bondingCurve(overrides?: CallOverrides): Promise<[string]>;
 
-    createCryptomedia(
-      _name: string,
+    createCryptomediaWithSig(
+      creator: string,
+      data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      feePct: BigNumberish,
+      sig: {
+        deadline: BigNumberish;
+        v: BigNumberish;
+        r: BytesLike;
+        s: BytesLike;
+      },
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    deployWithSigNonces(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     logic(overrides?: CallOverrides): Promise<[string]>;
   };
 
+  DEPLOY_WITH_SIG_TYPEHASH(overrides?: CallOverrides): Promise<string>;
+
   bondingCurve(overrides?: CallOverrides): Promise<string>;
 
-  createCryptomedia(
-    _name: string,
+  createCryptomediaWithSig(
+    creator: string,
+    data: {
+      tokenURI: string;
+      metadataURI: string;
+      contentHash: BytesLike;
+      metadataHash: BytesLike;
+    },
+    feePct: BigNumberish,
+    sig: {
+      deadline: BigNumberish;
+      v: BigNumberish;
+      r: BytesLike;
+      s: BytesLike;
+    },
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  deployWithSigNonces(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   logic(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
+    DEPLOY_WITH_SIG_TYPEHASH(overrides?: CallOverrides): Promise<string>;
+
     bondingCurve(overrides?: CallOverrides): Promise<string>;
 
-    createCryptomedia(
-      _name: string,
+    createCryptomediaWithSig(
+      creator: string,
+      data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      feePct: BigNumberish,
+      sig: {
+        deadline: BigNumberish;
+        v: BigNumberish;
+        r: BytesLike;
+        s: BytesLike;
+      },
       overrides?: CallOverrides
     ): Promise<string>;
+
+    deployWithSigNonces(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     logic(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
+    "CryptomediaDeployed(address,address,uint256)"(
+      contractAddress?: string | null,
+      creator?: string | null,
+      feePct?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { contractAddress: string; creator: string; feePct: BigNumber }
+    >;
+
     CryptomediaDeployed(
       contractAddress?: string | null,
       creator?: string | null,
-      cryptomediaName?: null
+      feePct?: null
     ): TypedEventFilter<
-      [string, string, string],
-      { contractAddress: string; creator: string; cryptomediaName: string }
+      [string, string, BigNumber],
+      { contractAddress: string; creator: string; feePct: BigNumber }
     >;
   };
 
   estimateGas: {
+    DEPLOY_WITH_SIG_TYPEHASH(overrides?: CallOverrides): Promise<BigNumber>;
+
     bondingCurve(overrides?: CallOverrides): Promise<BigNumber>;
 
-    createCryptomedia(
-      _name: string,
+    createCryptomediaWithSig(
+      creator: string,
+      data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      feePct: BigNumberish,
+      sig: {
+        deadline: BigNumberish;
+        v: BigNumberish;
+        r: BytesLike;
+        s: BytesLike;
+      },
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    deployWithSigNonces(
+      arg0: string,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     logic(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
+    DEPLOY_WITH_SIG_TYPEHASH(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     bondingCurve(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    createCryptomedia(
-      _name: string,
+    createCryptomediaWithSig(
+      creator: string,
+      data: {
+        tokenURI: string;
+        metadataURI: string;
+        contentHash: BytesLike;
+        metadataHash: BytesLike;
+      },
+      feePct: BigNumberish,
+      sig: {
+        deadline: BigNumberish;
+        v: BigNumberish;
+        r: BytesLike;
+        s: BytesLike;
+      },
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    deployWithSigNonces(
+      arg0: string,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     logic(overrides?: CallOverrides): Promise<PopulatedTransaction>;
