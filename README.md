@@ -6,7 +6,7 @@ Player is a protocol for continuous NFTs, currently the V0 is a WIP and I'm open
 
 
 
-# How does it work?
+# Summary
 
 The protocol is used to deploy `Cryptomedia` contracts. Each `Cryptomedia` contract is deployed by a creator through the `CryptomediaFactory`. The `CryptomediaFactory` takes in the creator's address, hashed contentURI and metadataURI data, and the reward fee the creator specifies for each transaction. The `CryptomediaFactory` then deploys a new `Cryptomedia` contract with the creator's signature. Each `Cryptomedia` contract is initialized with this information, and also contains the `bondingCurve` address for the bonding curve logic used to facilitate continuous token transactions.
 
