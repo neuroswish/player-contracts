@@ -11,7 +11,7 @@ import "./libraries/Base64.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
- * @title Cryptomedia
+ * @title Infinite Cryptomedia
  * @author neuroswish
  *
  * Infinite NFTs
