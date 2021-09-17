@@ -149,6 +149,8 @@ contract Cryptomedia is
         creator = _creator;
         data = _data;
         feePct = _feePct;
+        reserveRatio = 333333;
+        ppm = 1000000;
         feeBase = 10**18;
     }
 
